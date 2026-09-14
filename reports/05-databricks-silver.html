@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>05 · Databricks Silver — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 5 report · Databricks Silver</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html" aria-current="page">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 05 · Complete</div>
+      <h1>Silver layer: clean, normalize, and reshape for analytics</h1>
+      <p>
+        Silver converts Bronze into conformed tables: unpivot wide daily sales into
+        long facts, extract product/store dimensions, clean prices, and standardize
+        the calendar with event / SNAP helpers.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">Notebooks 02–04 finished</span>
+        <span class="chip">Schema: walmart_m5_silver</span>
+        <span class="chip ok">59.2M long sales rows</span>
+      </div>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat"><div class="label">silver_sales</div><div class="value">59.2M</div><div class="hint">long daily facts</div></article>
+      <article class="stat"><div class="label">silver_products</div><div class="value">3,049</div><div class="hint">SKUs</div></article>
+      <article class="stat"><div class="label">silver_stores</div><div class="value">10</div><div class="hint">CA / TX / WI</div></article>
+      <article class="stat"><div class="label">silver_calendar</div><div class="value">1,969</div><div class="hint">2011-01-29 → 2016-06-19</div></article>
+    </section>
+
+    <section class="panel section">
+      <h2>Notebooks and outputs</h2>
+      <table>
+        <thead><tr><th>Notebook</th><th>Tables</th><th>Key result</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>02_silver_sales</code></td>
+            <td><code>silver_sales</code></td>
+            <td>Wide→long for <code>d_1</code>…<code>d_1941</code> → <strong>59,181,090</strong> rows; quality checks passed</td>
+          </tr>
+          <tr>
+            <td><code>03_silver_products</code></td>
+            <td><code>silver_products</code>, <code>silver_stores</code>, <code>silver_sell_prices</code></td>
+            <td>3,049 products · 10 stores · 6,841,121 prices; referential checks passed</td>
+          </tr>
+          <tr>
+            <td><code>04_silver_calendar</code></td>
+            <td><code>silver_calendar</code></td>
+            <td>1,969 dates; event_flag + snap helpers; quality checks passed</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Critical transform: wide → long sales</h2>
+      <p style="margin-bottom:1rem;color:var(--ink-soft);">
+        Bronze keeps competition-native wide columns. Silver unpivots them and maps
+        <code>day_id</code> to real dates via calendar.
+      </p>
+      <pre>Bronze (wide)
+item_id | store_id | d_1 | d_2 | ... | d_1941
+
+        │  melt / stack
+        ▼
+
+Silver (long)
+date | day_id | item_id | store_id | quantity
+</pre>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>0 unmatched calendar days</span></li>
+        <li><span class="mark">✓</span><span>0 null item/store/date keys</span></li>
+        <li><span class="mark">✓</span><span>0 negative quantities</span></li>
+        <li><span class="mark">✓</span><span>0 duplicate item×store×day rows</span></li>
+        <li><span class="mark">✓</span><span>Partitioned by <code>date</code> for prune-friendly reads</span></li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>Silver table contracts</h2>
+      <table>
+        <thead><tr><th>Table</th><th>Grain</th><th>Important columns</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>silver_sales</code></td>
+            <td>item × store × day</td>
+            <td><code>date, day_id, wm_yr_wk, item_id, dept_id, cat_id, store_id, state_id, quantity</code></td>
+          </tr>
+          <tr>
+            <td><code>silver_products</code></td>
+            <td>item</td>
+            <td><code>item_id, dept_id, cat_id</code></td>
+          </tr>
+          <tr>
+            <td><code>silver_stores</code></td>
+            <td>store</td>
+            <td><code>store_id, state_id</code></td>
+          </tr>
+          <tr>
+            <td><code>silver_sell_prices</code></td>
+            <td>store × item × week</td>
+            <td><code>store_id, item_id, wm_yr_wk, sell_price</code> (price &gt; 0)</td>
+          </tr>
+          <tr>
+            <td><code>silver_calendar</code></td>
+            <td>date</td>
+            <td>calendar attrs + <code>event_flag</code>, <code>snap_*</code>, <code>snap_any_flag</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <p class="footer"><a href="04-databricks-bronze.html">← Bronze</a> · <a href="06-databricks-gold.html">Next: Gold →</a></p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Walmart M5 Progress Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Progress report · Orchestration complete</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html" aria-current="page">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Project status · Sep 2026</div>
+      <h1>Walmart M5 retail data platform — Bronze, Silver, and Gold delivered</h1>
+      <p>
+        End-to-end FMCG demand platform using the Kaggle M5 Forecasting dataset.
+        Raw files were validated in Python, orchestrated with Airflow, and transformed
+        in Databricks into a Medallion lakehouse ready for analytics / Power BI.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">Medallion complete</span>
+        <span class="chip ok">Airflow ↔ Databricks live</span>
+        <span class="chip ok">Executive dashboard analysed</span>
+      </div>
+    </section>
+
+    <section class="grid stats" aria-label="Key metrics">
+      <article class="stat">
+        <div class="label">Architecture steps</div>
+        <div class="value">7 / 7</div>
+        <div class="hint">Through Jobs automation</div>
+      </article>
+      <article class="stat">
+        <div class="label">Notebooks run</div>
+        <div class="value">7</div>
+        <div class="hint">01 → 07 all succeeded</div>
+      </article>
+      <article class="stat">
+        <div class="label">Fact rows</div>
+        <div class="value">59.2M</div>
+        <div class="hint">fact_daily_sales</div>
+      </article>
+      <article class="stat">
+        <div class="label">Gold aggs</div>
+        <div class="value">7</div>
+        <div class="hint">BI-ready tables</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>Architecture progress</h2>
+      <div class="flow" aria-label="Pipeline stages">
+        <div class="flow-step done"><div class="n">01</div><h3>Raw Dataset</h3><p>3 CSVs in data/raw</p></div>
+        <div class="flow-step done"><div class="n">02</div><h3>Python Ingestion</h3><p>Validate + manifest</p></div>
+        <div class="flow-step done"><div class="n">03</div><h3>Airflow</h3><p>m5_pipeline DAG</p></div>
+        <div class="flow-step done"><div class="n">04</div><h3>Bronze</h3><p>Raw Delta + metadata</p></div>
+        <div class="flow-step done current"><div class="n">05–06</div><h3>Silver → Gold</h3><p>Star schema + aggs</p></div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Medallion summary</h2>
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Schema</th><th>Tables</th><th>Highlight</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Bronze</td>
+            <td><code>workspace.walmart_m5_bronze</code></td>
+            <td>3</td>
+            <td>calendar 1,969 · sales 30,490 · prices 6,841,121</td>
+          </tr>
+          <tr>
+            <td>Silver</td>
+            <td><code>workspace.walmart_m5_silver</code></td>
+            <td>5</td>
+            <td>sales long-form <strong>59,181,090</strong> rows</td>
+          </tr>
+          <tr>
+            <td>Gold</td>
+            <td><code>workspace.walmart_m5_gold</code></td>
+            <td>12</td>
+            <td>3 dims · 2 facts · 7 aggregates</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="grid cards section" style="margin-top:1.5rem;">
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>01 — Raw Dataset</h2>
+        <p>Kaggle M5 CSVs staged locally under <code>data/raw/</code>.</p>
+        <a class="cta" href="01-raw-dataset.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>02 — Python Ingestion</h2>
+        <p>Source detection, schema/size/row checks, batch manifests.</p>
+        <a class="cta" href="02-python-ingestion.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>03 — Apache Airflow</h2>
+        <p>Docker LocalExecutor DAG with parallel Bronze staging branch.</p>
+        <a class="cta" href="03-airflow.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>04 — Databricks Bronze</h2>
+        <p>Volume landing + Delta tables with ingestion metadata.</p>
+        <a class="cta" href="04-databricks-bronze.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>05 — Databricks Silver</h2>
+        <p>Wide→long sales, products, stores, prices, calendar cleans.</p>
+        <a class="cta" href="05-databricks-silver.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>06 — Databricks Gold</h2>
+        <p>Star schema facts/dims and BI aggregate tables.</p>
+        <a class="cta" href="06-databricks-gold.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>08 — Executive Analysis</h2>
+        <p>Dashboard 1 validated vs gold_export with key demand/store/category findings.</p>
+        <a class="cta" href="08-executive-dashboard-analysis.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>09 — Store Analysis</h2>
+        <p>Dashboard 2 validated vs gold_export: state mix, store ranks, category share, interactions.</p>
+        <a class="cta" href="09-store-dashboard-analysis.html">Open →</a>
+      </article>
+      <article class="card">
+        <div class="status">Complete</div>
+        <h2>10 — Product Analysis</h2>
+        <p>Dashboard 3 validated: Top 15 FOODS_3, volatility scatter, dept prices.</p>
+        <a class="cta" href="10-product-dashboard-analysis.html">Open →</a>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>Checklist</h2>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>Raw M5 source files staged</span></li>
+        <li><span class="mark">✓</span><span>Python validation + ingestion metadata</span></li>
+        <li><span class="mark">✓</span><span>Airflow Docker orchestration</span></li>
+        <li><span class="mark">✓</span><span>Bronze Delta tables in Databricks</span></li>
+        <li><span class="mark">✓</span><span>Silver conformed tables</span></li>
+        <li><span class="mark">✓</span><span>Gold dimensions, facts, aggregates</span></li>
+        <li><span class="mark">✓</span><span>Airflow → Databricks Jobs automation</span></li>
+        <li><span class="mark">✓</span><span>Power BI Executive page + gold_export validation</span></li>
+        <li><span class="mark">✓</span><span>Power BI Store page + gold_export validation</span></li>
+        <li><span class="mark">✓</span><span>Power BI Product page + gold_export validation</span></li>
+        <li><span class="mark">○</span><span>Demand page write-up</span></li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>Orchestration proof</h2>
+      <p>
+        Latest successful run documented in
+        <a href="07-airflow-databricks-jobs.html">07 — Airflow → Databricks Jobs</a>
+        (includes Graph + Grid screenshots and DAG diagrams).
+      </p>
+    </section>
+
+    <p class="footer">Open <code>reports/index.html</code> in a browser · detailed pages linked above</p>
+  </div>
+</body>
+</html>

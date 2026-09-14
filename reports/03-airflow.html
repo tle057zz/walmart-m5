@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Step 3 · Apache Airflow — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 3 report · Apache Airflow</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html" aria-current="page">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 03 · Complete</div>
+      <h1>Airflow orchestrates the M5 pipeline in Docker</h1>
+      <p>
+        Apache Airflow runs locally via Docker Compose (LocalExecutor). The
+        <code>m5_pipeline</code> DAG calls the existing Python validation code,
+        then stages parallel Bronze load markers for sales, prices, and calendar.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">DAG run: success</span>
+        <span class="chip">UI: localhost:8088</span>
+        <span class="chip next">Next: Databricks Bronze</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>m5_pipeline DAG</h2>
+      <p>
+        Defined in <code>airflow/dags/m5_pipeline_dag.py</code>. After validation,
+        the three Bronze staging loads run in parallel.
+      </p>
+      <div class="dag" aria-label="m5_pipeline DAG">
+        <div class="dag-node bookend">start</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">check_source_files</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">validate_raw_files</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-branch">
+          <div class="dag-node">load_sales</div>
+          <div class="dag-node">load_prices</div>
+          <div class="dag-node">load_calendar</div>
+        </div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">validate_bronze</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node bookend">end</div>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Successful graph run (Airflow UI)</h2>
+      <p>
+        All eight tasks completed successfully (~11 seconds). Parallel loads fan out
+        after validation, then rejoin at <code>validate_bronze</code>.
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/m5_pipeline_graph.png"
+          alt="Airflow Graph view of m5_pipeline showing all tasks successful"
+        />
+        <figcaption>
+          Airflow Graph view — <code>m5_pipeline</code> after a successful manual trigger.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="panel section">
+      <h2>How to run Docker + Airflow</h2>
+      <ol style="margin:1rem 0 0;padding-left:1.2rem;color:var(--ink-soft);">
+        <li style="margin-bottom:0.55rem;">Install and start <strong>Docker Desktop</strong>.</li>
+        <li style="margin-bottom:0.55rem;">From the project, start the stack:
+          <pre>cd airflow
+docker compose up -d</pre>
+        </li>
+        <li style="margin-bottom:0.55rem;">Open the UI: <a href="http://localhost:8088">http://localhost:8088</a>
+          <br />Login: <code>airflow</code> / <code>airflow</code>
+        </li>
+        <li style="margin-bottom:0.55rem;">Find DAG <code>m5_pipeline</code> → unpause → <strong>Trigger DAG</strong>.</li>
+        <li>Open the run → <strong>Graph</strong> tab to confirm all tasks are green.</li>
+      </ol>
+      <pre># useful commands
+docker compose ps
+docker compose logs -f airflow-scheduler
+docker compose down</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>What each task does</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Task</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>check_source_files</code></td>
+            <td>Confirm the three raw CSVs exist under <code>data/raw/</code></td>
+          </tr>
+          <tr>
+            <td><code>validate_raw_files</code></td>
+            <td>Schema / size / row-count checks + write ingestion manifest</td>
+          </tr>
+          <tr>
+            <td><code>load_sales</code> / <code>load_prices</code> / <code>load_calendar</code></td>
+            <td>Parallel Bronze staging markers (Databricks write comes next)</td>
+          </tr>
+          <tr>
+            <td><code>validate_bronze</code></td>
+            <td>Confirm all three staging markers exist for the batch</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <p class="footer"><a href="02-python-ingestion.html">← Python Ingestion</a> · <a href="index.html">Overview</a></p>
+  </div>
+</body>
+</html>

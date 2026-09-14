@@ -1,0 +1,13 @@
+# Core (stdlib-only ingestion works today; these support later phases)
+pandas>=2.0.0
+pyarrow>=14.0.0
+
+# Databricks SQL export (scripts/export_gold_tables.py)
+databricks-sql-connector[pyarrow]>=4.0.0
+
+# Orchestration / platform (install when setting up those phases)
+# apache-airflow>=2.8.0
+# pyspark>=3.5.0
+
+# Dataset download
+kaggle>=1.6.0

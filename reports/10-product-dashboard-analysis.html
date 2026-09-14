@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>10 · Product Dashboard Analysis — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 10 report · Product dashboard analysis</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html" aria-current="page">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 10 · Dashboard 3</div>
+      <h1>Product dashboard: DAX, visualization, validation &amp; findings</h1>
+      <p>
+        Analysis of the Power BI <strong>Product</strong> page against
+        <code>data/gold_export/</code>
+        (<code>agg_product_performance</code>, <code>agg_price_analysis</code>,
+        <code>dim_product</code>).
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">KPIs match Gold</span>
+        <span class="chip ok">Scatter at item grain</span>
+        <span class="chip">3,049 SKUs</span>
+        <span class="chip">Top 15 = all FOODS_3</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Part A — DAX measures used on Product (Page 3)</h2>
+      <p>
+        Full catalogue:
+        <a href="08-executive-dashboard-analysis.html">08 Executive · Part A</a>.
+        Product page measures:
+      </p>
+      <pre>Product Units =
+SUM ( 'agg_product_performance'[units_sold] )
+
+Product Sales Value =
+SUM ( 'agg_product_performance'[sales_value] )
+
+Product Demand Volatility =
+AVERAGE ( 'agg_product_performance'[demand_volatility] )
+
+Product Avg Daily Units =
+AVERAGE ( 'agg_product_performance'[avg_daily_units] )
+
+Product Units Rank =
+RANKX (
+    ALLSELECTED ( 'agg_product_performance'[item_id] ),
+    [Product Units],
+    ,
+    DESC,
+    DENSE
+)</pre>
+      <table>
+        <thead>
+          <tr><th>Measure / field</th><th>Visual</th><th>Format / note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>[Product Units]</code></td><td>Card, Top 15 bar</td><td>Whole number</td></tr>
+          <tr><td><code>[Product Sales Value]</code></td><td>Card, category column</td><td>Currency $ (2 dp)</td></tr>
+          <tr><td><code>[Product Demand Volatility]</code></td><td>Card</td><td>Decimal · dashboard ≈ 1.75</td></tr>
+          <tr><td><code>item_id</code> + <code>units_rank ≤ 15</code></td><td>Top 15 bar filter</td><td>Or Top N by Product Units</td></tr>
+          <tr><td><code>avg_daily_units</code>, <code>demand_volatility</code>, <code>sales_value</code>, <code>item_id</code>, <code>cat_id</code></td><td>Scatter</td><td>Average for X/Y; Sum size; Values = item_id</td></tr>
+          <tr><td><code>agg_price_analysis</code> columns</td><td>Price table</td><td>No measure required</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Part B — Dashboard 3 screenshot</h2>
+      <figure class="figure">
+        <img
+          src="assets/product-dashboard-page3.png"
+          alt="Power BI Product dashboard: KPI cards, cat/dept slicers, top 15 items bar, volatility scatter by item, sales by category, price analysis table"
+          loading="lazy"
+        />
+        <figcaption>
+          Figure 1. Product dashboard (Page 3) — 67M units · $191.58M sales ·
+          volatility 1.75 · Top 15 FOODS_3 SKUs · scatter by item_id · price by dept
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">Product Units</div>
+        <div class="value">66.9M</div>
+        <div class="hint">Same network total as store facts</div>
+      </article>
+      <article class="stat">
+        <div class="label">Product Sales</div>
+        <div class="value">$191.58M</div>
+        <div class="hint">Exact match gold_export</div>
+      </article>
+      <article class="stat">
+        <div class="label">Avg volatility</div>
+        <div class="value">1.75</div>
+        <div class="hint">Mean of demand_volatility</div>
+      </article>
+      <article class="stat">
+        <div class="label">#1 SKU</div>
+        <div class="value">FOODS_3_090</div>
+        <div class="hint">1.02M units · ~1.5% of all units</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>1. Scope &amp; method</h2>
+      <table>
+        <thead>
+          <tr><th>Dashboard visual</th><th>Gold source</th><th>Validation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>KPI cards</td>
+            <td><code>agg_product_performance</code></td>
+            <td class="ok">66,927,173 units · $191,577,546.04 · vol ≈ 1.746</td>
+          </tr>
+          <tr>
+            <td>Top 15 bar</td>
+            <td><code>item_id</code> + <code>units_rank</code> / units</td>
+            <td class="ok">All 15 are FOODS_3; #1 FOODS_3_090</td>
+          </tr>
+          <tr>
+            <td>Scatter</td>
+            <td>avg_daily_units × demand_volatility · size sales · legend cat</td>
+            <td class="ok">Item grain (not 3 category bubbles)</td>
+          </tr>
+          <tr>
+            <td>Sales by category</td>
+            <td><code>[Product Sales Value]</code> by <code>cat_id</code></td>
+            <td class="ok">FOODS $111.1M · HOUSEHOLD $57.1M · HOBBIES $23.3M</td>
+          </tr>
+          <tr>
+            <td>Price table</td>
+            <td><code>agg_price_analysis</code></td>
+            <td class="ok">FOODS_3 highest sales; HOUSEHOLD_2 max price 107.32</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>2. Visualization &amp; interaction</h2>
+
+      <h3>2.1 Layout</h3>
+      <pre>┌──────────────────────────────────────────────────────────────┐
+│ [ Product Units ] [ Product Sales $ ] [ Demand Volatility ]  │
+│ [ cat_id slicer ]                                            │
+│ [ dept_id slicer ]  [ Top 15 bar ]      [ Volatility scatter ]│
+│                 [ Sales by cat ]        [ Price analysis tbl ]│
+└──────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>2.2 Visual-to-field map</h3>
+      <table>
+        <thead>
+          <tr><th>Visual</th><th>Type</th><th>Fields</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Category</td>
+            <td>Slicer</td>
+            <td><code>dim_product[cat_id]</code> or <code>agg_product_performance[cat_id]</code></td>
+          </tr>
+          <tr>
+            <td>Department</td>
+            <td>Slicer</td>
+            <td><code>dept_id</code> (FOODS_1…HOUSEHOLD_2)</td>
+          </tr>
+          <tr>
+            <td>KPIs</td>
+            <td>Cards</td>
+            <td><code>[Product Units]</code>, <code>[Product Sales Value]</code>, <code>[Product Demand Volatility]</code></td>
+          </tr>
+          <tr>
+            <td>Top 15</td>
+            <td>Clustered bar</td>
+            <td>Y <code>item_id</code> · X <code>[Product Units]</code> · filter <code>units_rank ≤ 15</code></td>
+          </tr>
+          <tr>
+            <td>Volatility vs volume</td>
+            <td>Scatter</td>
+            <td>Values <code>item_id</code> · X <code>avg_daily_units</code> (Avg) · Y <code>demand_volatility</code> (Avg) · Size <code>sales_value</code> · Legend <code>cat_id</code></td>
+          </tr>
+          <tr>
+            <td>Sales by category</td>
+            <td>Clustered column</td>
+            <td>X <code>cat_id</code> · Y <code>[Product Sales Value]</code></td>
+          </tr>
+          <tr>
+            <td>Price analysis</td>
+            <td>Table</td>
+            <td><code>cat_id</code>, <code>dept_id</code>, avg/median/min/max sell price, <code>sales_value</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Interaction design</h3>
+      <table>
+        <thead>
+          <tr><th>Control</th><th>Behaviour</th><th>Analyst use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>cat_id slicer</strong></td>
+            <td>Filters all product visuals and KPIs</td>
+            <td>Isolate FOODS vs HOBBIES vs HOUSEHOLD</td>
+          </tr>
+          <tr>
+            <td><strong>dept_id slicer</strong></td>
+            <td>Narrows to one department (e.g. FOODS_3)</td>
+            <td>Explain why Top 15 is dominated by FOODS_3</td>
+          </tr>
+          <tr>
+            <td><strong>Multi-select</strong></td>
+            <td>Format → Selection → Multi-select with CTRL = <strong>Off</strong></td>
+            <td>Toggle several depts without clearing</td>
+          </tr>
+          <tr>
+            <td><strong>Scatter click</strong></td>
+            <td>Highlights one SKU; cross-filters peers if Edit interactions = Filter</td>
+            <td>Inspect high-volume / high-volatility outliers</td>
+          </tr>
+          <tr>
+            <td><strong>Top 15 click</strong></td>
+            <td>Filters scatter/table to that item when interactions allow</td>
+            <td>Link rank list to bubble position</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.4 Suggested click-path</h3>
+      <ol>
+        <li>Read KPIs (network volume, sales, average volatility).</li>
+        <li>Scan Top 15 — note all are FOODS_3.</li>
+        <li>On scatter, find large FOODS bubbles at high avg_daily_units (right side).</li>
+        <li>Filter <code>cat_id</code> = HOUSEHOLD → see lower volume, different price profile in table.</li>
+        <li>Clear → select FOODS_3 in dept slicer → confirm Top 15 / scatter focus.</li>
+        <li>Use price table for dept-level pricing bands (esp. HOUSEHOLD_2 max).</li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>3. Key pattern findings</h2>
+
+      <h3>3.1 Top movers are exclusively FOODS_3</h3>
+      <p>
+        All <strong>Top 15</strong> SKUs by units are in department <strong>FOODS_3</strong>.
+        Leader <code>FOODS_3_090</code>: <strong>1,017,916</strong> units (~1.5% of all units),
+        avg daily units 52.4, demand volatility 60.9 (also #1 volatility).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th>item_id</th><th>Units</th><th>Sales</th><th>Avg daily</th><th>Volatility</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>FOODS_3_090</td><td>1,017,916</td><td>$1.38M</td><td>52.4</td><td>60.9</td></tr>
+          <tr><td>2</td><td>FOODS_3_586</td><td>932,236</td><td>$1.48M</td><td>48.0</td><td>32.8</td></tr>
+          <tr><td>3</td><td>FOODS_3_252</td><td>573,723</td><td>$0.87M</td><td>29.6</td><td>22.2</td></tr>
+          <tr><td>4</td><td>FOODS_3_555</td><td>497,881</td><td>$0.79M</td><td>25.7</td><td>18.6</td></tr>
+          <tr><td>5</td><td>FOODS_3_587</td><td>402,159</td><td>$0.99M</td><td>20.7</td><td>18.6</td></tr>
+        </tbody>
+      </table>
+      <p>
+        High-velocity FOODS items also tend to be high-volatility — volume and
+        instability travel together for the head of the assortment
+        (corr(avg_daily_units, demand_volatility) ≈ <strong>0.94</strong> across SKUs).
+      </p>
+
+      <h3>3.2 Category economics</h3>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>SKUs</th><th>Units</th><th>Sales</th><th>Mean volatility</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>FOODS</td><td>1,437</td><td>45.9M</td><td>$111.1M</td><td>2.39</td></tr>
+          <tr><td>HOUSEHOLD</td><td>1,047</td><td>14.8M</td><td>$57.1M</td><td>1.19</td></tr>
+          <tr><td>HOBBIES</td><td>565</td><td>6.2M</td><td>$23.3M</td><td>1.13</td></tr>
+        </tbody>
+      </table>
+      <p>
+        FOODS is both the largest and the most volatile category on average.
+        HOBBIES is smallest and calmest — fewer SKUs, lower unit velocity.
+      </p>
+
+      <h3>3.3 Price structure by department</h3>
+      <table>
+        <thead>
+          <tr><th>dept_id</th><th>Avg price</th><th>Median</th><th>Min</th><th>Max</th><th>Sales value</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>FOODS_3</td><td>$2.84</td><td>$2.50</td><td>$0.01</td><td>$19.48</td><td>$72.35M</td></tr>
+          <tr><td>HOUSEHOLD_1</td><td>$5.06</td><td>$3.97</td><td>$0.01</td><td>$29.97</td><td>$42.13M</td></tr>
+          <tr><td>FOODS_2</td><td>$4.08</td><td>$2.98</td><td>$0.20</td><td>$13.98</td><td>$25.59M</td></tr>
+          <tr><td>HOBBIES_1</td><td>$6.22</td><td>$4.88</td><td>$0.01</td><td>$30.98</td><td>$22.12M</td></tr>
+          <tr><td>HOUSEHOLD_2</td><td>$5.86</td><td>$5.64</td><td>$0.05</td><td><strong>$107.32</strong></td><td>$14.98M</td></tr>
+          <tr><td>FOODS_1</td><td>$3.37</td><td>$2.54</td><td>$0.07</td><td>$12.98</td><td>$13.20M</td></tr>
+          <tr><td>HOBBIES_2</td><td>$2.69</td><td>$2.47</td><td>$0.05</td><td>$9.97</td><td>$1.20M</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>FOODS_3</strong> drives the most sales at a <em>low</em> average price —
+        classic high-velocity grocery. <strong>HOUSEHOLD_2</strong> has the extreme
+        max price ($107.32) but far less total sales than FOODS_3.
+      </p>
+
+      <h3>3.4 Scatter interpretation</h3>
+      <p>
+        Most SKUs cluster near the origin (low avg daily units, low volatility).
+        A small FOODS tail extends to the upper-right: high run-rate and high
+        volatility. Those SKUs need tighter forecast / safety-stock attention than
+        the long tail of quiet items.
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>4. Dashboard quality notes</h2>
+      <ul class="checklist">
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            Scatter uses <code>item_id</code> on Values with Average of
+            <code>avg_daily_units</code> / <code>demand_volatility</code> — correct grain
+            (not 3 summed category bubbles).
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>Top 15 filter matches <code>units_rank</code> / unit ranking in Gold.</span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Format <strong>Product Sales Value</strong> card like Executive
+            ($191.58M, not $191.57754604M).
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Slicers: set <strong>Multi-select with CTRL = Off</strong> on cat_id /
+            dept_id for easier multi-toggle (same fix as Store page).
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Optional: add tooltip fields on Top 15 / scatter
+            (<code>dept_id</code>, <code>avg_sell_price</code>, <code>stores_selling</code>).
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>5. Recommendations</h2>
+      <ol>
+        <li>Prioritise demand planning on <strong>FOODS_3</strong> head SKUs (especially <code>FOODS_3_090</code>, <code>_586</code>).</li>
+        <li>Treat high avg-daily + high volatility items as forecast-critical; long-tail SKUs can use simpler baselines.</li>
+        <li>Use dept price table for assortment pricing reviews — watch HOUSEHOLD_2 outliers.</li>
+        <li>Format sales card; enable easy multi-select on category/dept slicers.</li>
+        <li>Sync category slicer with Executive/Store if stakeholders drill from FOODS columns.</li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>6. Reproduce</h2>
+      <pre><code>python - &lt;&lt;'PY'
+import pandas as pd
+from pathlib import Path
+P = Path('data/gold_export')
+pp = pd.read_parquet(P/'agg_product_performance.parquet')
+print(pp['units_sold'].sum(), pp['sales_value'].sum(), pp['demand_volatility'].mean())
+print(pp.nsmallest(15, 'units_rank')[['item_id','units_sold','demand_volatility']])
+print(pd.read_parquet(P/'agg_price_analysis.parquet').sort_values('sales_value', ascending=False))
+PY</code></pre>
+      <p>
+        Screenshot:
+        <a href="assets/product-dashboard-page3.png"><code>assets/product-dashboard-page3.png</code></a>.
+        Related:
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a> ·
+        <a href="09-store-dashboard-analysis.html">09 Store</a>.
+      </p>
+    </section>
+
+    <p class="footer">
+      Open <code>reports/10-product-dashboard-analysis.html</code> ·
+      validated against gold_export · Sep 2026
+    </p>
+  </div>
+</body>
+</html>

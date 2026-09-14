@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>08 · Executive Dashboard Analysis — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 8 report · Executive dashboard analysis</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html" aria-current="page">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 08 · Data analysis</div>
+      <h1>DAX catalogue, then Executive dashboard report</h1>
+      <p>
+        <strong>Part A</strong> lists all 33 Power BI DAX measures in full.
+        <strong>Part B</strong> validates Dashboard 1 (Executive) against
+        <code>data/gold_export/</code>.
+      </p>
+      <div class="meta-row">
+        <span class="chip">Part A · 33 DAX measures</span>
+        <span class="chip ok">Part B · Dashboard 1 analysis</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Part A — All DAX measures (paste into <code>_Measures</code>)</h2>
+      <p>
+        Complete catalogue of <strong>33</strong> Power BI measures used across
+        all dashboard pages. Create each with
+        <em>right-click <code>_Measures</code> → New measure</em>, then paste.
+        Format currency / percentage measures in the ribbon after creating them.
+      </p>
+
+      <h3>Core sales</h3>
+      <pre>/* 1 */
+Total Units =
+SUM ( 'agg_daily_store_sales'[units_sold] )
+
+/* 2 — format Currency $ */
+Total Sales Value =
+SUM ( 'agg_daily_store_sales'[sales_value] )
+
+/* 3 — format Currency $ */
+Avg Sell Price =
+AVERAGE ( 'agg_daily_store_sales'[avg_sell_price] )
+
+/* 4 */
+Active SKUs (Store Day) =
+SUM ( 'agg_daily_store_sales'[active_skus] )
+
+/* 5 — format Currency $ */
+Avg Daily Sales Value =
+AVERAGEX (
+    VALUES ( 'dim_date'[date] ),
+    [Total Sales Value]
+)</pre>
+
+      <h3>Category</h3>
+      <pre>/* 6 */
+Category Units =
+SUM ( 'agg_daily_category_sales'[units_sold] )
+
+/* 7 — format Currency $ */
+Category Sales Value =
+SUM ( 'agg_daily_category_sales'[sales_value] )
+
+/* 8 */
+Category Active Stores =
+SUM ( 'agg_daily_category_sales'[active_stores] )</pre>
+
+      <h3>Product performance</h3>
+      <pre>/* 9 */
+Product Units =
+SUM ( 'agg_product_performance'[units_sold] )
+
+/* 10 — format Currency $ */
+Product Sales Value =
+SUM ( 'agg_product_performance'[sales_value] )
+
+/* 11 */
+Product Avg Daily Units =
+AVERAGE ( 'agg_product_performance'[avg_daily_units] )
+
+/* 12 */
+Product Demand Volatility =
+AVERAGE ( 'agg_product_performance'[demand_volatility] )
+
+/* 13 — format Currency $ */
+Product Avg Price =
+AVERAGE ( 'agg_product_performance'[avg_sell_price] )
+
+/* 14 */
+Stores Selling =
+SUM ( 'agg_product_performance'[stores_selling] )
+
+/* 15 */
+Product Units Rank =
+RANKX (
+    ALLSELECTED ( 'agg_product_performance'[item_id] ),
+    [Product Units],
+    ,
+    DESC,
+    DENSE
+)</pre>
+
+      <h3>Demand trends</h3>
+      <pre>/* 16 */
+Daily Units =
+SUM ( 'agg_demand_trends'[daily_units] )
+
+/* 17 — format Currency $ */
+Daily Sales Value (Demand) =
+SUM ( 'agg_demand_trends'[daily_sales_value] )
+
+/* 18 */
+Rolling 7D Units =
+SUM ( 'agg_demand_trends'[rolling_7d_units] )
+
+/* 19 */
+Rolling 28D Units =
+SUM ( 'agg_demand_trends'[rolling_28d_units] )
+
+/* 20 */
+Rolling 7D Avg Units =
+AVERAGE ( 'agg_demand_trends'[rolling_7d_avg_units] )
+
+/* 21 */
+Active SKUs (Demand) =
+SUM ( 'agg_demand_trends'[active_skus] )
+
+/* 22 */
+Active Stores (Demand) =
+SUM ( 'agg_demand_trends'[active_stores] )</pre>
+
+      <h3>Event &amp; price</h3>
+      <pre>/* 23 */
+Event Units =
+SUM ( 'agg_event_sales'[units_sold] )
+
+/* 24 — format Currency $ */
+Event Sales Value =
+SUM ( 'agg_event_sales'[sales_value] )
+
+/* 25 — format Percentage */
+Category Share =
+AVERAGE ( 'agg_store_category_sales'[category_sales_share] )
+
+/* 26 — format Currency $ */
+Price Avg =
+AVERAGE ( 'agg_price_analysis'[avg_sell_price] )
+
+/* 27 — format Currency $ */
+Price Median =
+AVERAGE ( 'agg_price_analysis'[median_sell_price] )</pre>
+
+      <h3>Time intelligence</h3>
+      <p>Requires <code>dim_date[date]</code> marked as the date table.</p>
+      <pre>/* 28 — format Currency $ */
+Sales Value Previous Year =
+CALCULATE (
+    [Total Sales Value],
+    SAMEPERIODLASTYEAR ( 'dim_date'[date] )
+)
+
+/* 29 — format Percentage */
+Sales Value YoY % =
+VAR Curr = [Total Sales Value]
+VAR Prev = [Sales Value Previous Year]
+RETURN
+IF (
+    Prev = 0 || ISBLANK ( Prev ),
+    BLANK (),
+    DIVIDE ( Curr - Prev, Prev )
+)
+
+/* 30 */
+Units Previous Year =
+CALCULATE (
+    [Total Units],
+    SAMEPERIODLASTYEAR ( 'dim_date'[date] )
+)
+
+/* 31 — format Percentage */
+Units YoY % =
+VAR Curr = [Total Units]
+VAR Prev = [Units Previous Year]
+RETURN
+IF (
+    Prev = 0 || ISBLANK ( Prev ),
+    BLANK (),
+    DIVIDE ( Curr - Prev, Prev )
+)
+
+/* 32 — format Currency $ */
+Sales Value MTD =
+TOTALMTD ( [Total Sales Value], 'dim_date'[date] )
+
+/* 33 — format Currency $ */
+Sales Value YTD =
+TOTALYTD ( [Total Sales Value], 'dim_date'[date] )</pre>
+
+      <h3>Quick index</h3>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Measure</th><th>Group</th><th>Used on Executive?</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>Total Units</td><td>Core</td><td>Yes — card</td></tr>
+          <tr><td>2</td><td>Total Sales Value</td><td>Core</td><td>Yes — card, store bar</td></tr>
+          <tr><td>3</td><td>Avg Sell Price</td><td>Core</td><td>No (Store page)</td></tr>
+          <tr><td>4</td><td>Active SKUs (Store Day)</td><td>Core</td><td>No</td></tr>
+          <tr><td>5</td><td>Avg Daily Sales Value</td><td>Core</td><td>Yes — card</td></tr>
+          <tr><td>6</td><td>Category Units</td><td>Category</td><td>No</td></tr>
+          <tr><td>7</td><td>Category Sales Value</td><td>Category</td><td>Yes — category column</td></tr>
+          <tr><td>8</td><td>Category Active Stores</td><td>Category</td><td>No</td></tr>
+          <tr><td>9–15</td><td>Product *</td><td>Product</td><td>No (Product page)</td></tr>
+          <tr><td>16</td><td>Daily Units</td><td>Demand</td><td>Yes — demand line</td></tr>
+          <tr><td>17</td><td>Daily Sales Value (Demand)</td><td>Demand</td><td>No (Demand page)</td></tr>
+          <tr><td>18</td><td>Rolling 7D Units</td><td>Demand</td><td>Yes — demand line</td></tr>
+          <tr><td>19–22</td><td>Rolling / Active *</td><td>Demand</td><td>No (Demand page)</td></tr>
+          <tr><td>23–27</td><td>Event / Price *</td><td>Event / price</td><td>No (Store / Demand / Product)</td></tr>
+          <tr><td>28–29</td><td>Sales Value Previous Year / YoY %</td><td>Time intel</td><td>Yes — YoY card</td></tr>
+          <tr><td>30–33</td><td>Units YoY / MTD / YTD</td><td>Time intel</td><td>Optional</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="hero" style="margin-top:2rem;">
+      <div class="eyebrow">Part B — Dashboard 1 analysis</div>
+      <h1>Executive page: validation &amp; findings</h1>
+      <p>
+        Independent check of the Power BI Executive page against
+        <code>data/gold_export/</code>. Numbers recomputed with
+        <code>scripts/analyze_executive_dashboard.py</code>.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">KPIs match dashboard</span>
+        <span class="chip ok">Sales card formatted</span>
+        <span class="chip ok">Demand line at day grain</span>
+        <span class="chip ok">2016 vs 2015 YTD card</span>
+        <span class="chip">Window: 2011-01-29 → 2016-05-22</span>
+        <span class="chip">1,941 sales days</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Dashboard 1 screenshot — Executive (updated)</h2>
+      <p>
+        Power BI page <strong>Executive</strong> after UI fixes: sales card
+        <strong>191.58M</strong>, daily demand + rolling 7D, five KPI cards including
+        <strong>2016 YTD vs 2015 YTD ≈ 18%</strong>, years 2011–2016 selected.
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/executive-dashboard-page1.png"
+          alt="Power BI Executive dashboard with five KPI cards including 2016 YTD vs 2015 YTD, daily demand line, store ranking, category sales"
+          loading="lazy"
+        />
+        <figcaption>
+          Figure 1. Executive (updated) — 67M units · 191.58M sales · YoY 27.08% ·
+          Avg daily 98.70K · 2016 YTD vs 2015 YTD 0.18 (18%) · CA_3 / FOODS lead
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">Total Units</div>
+        <div class="value">66.9M</div>
+        <div class="hint">Dashboard 67M · exact 66,927,173</div>
+      </article>
+      <article class="stat">
+        <div class="label">Total Sales Value</div>
+        <div class="value">$191.58M</div>
+        <div class="hint">Formatted on card as 191.58M</div>
+      </article>
+      <article class="stat">
+        <div class="label">Avg Daily Sales</div>
+        <div class="value">$98.7K</div>
+        <div class="hint">$98,700.44 / day</div>
+      </article>
+      <article class="stat">
+        <div class="label">2016 vs 2015 YTD</div>
+        <div class="value">+18%</div>
+        <div class="hint">Same-window card · gold_export match</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>1. Scope &amp; method</h2>
+      <p>
+        Source tables: <code>agg_daily_store_sales</code>,
+        <code>agg_daily_category_sales</code>, <code>agg_demand_trends</code>,
+        <code>dim_date</code>. Facts were not required — Executive visuals are
+        built from Gold aggregates (same design as the Power BI Import model).
+      </p>
+      <table>
+        <thead>
+          <tr><th>Dashboard visual</th><th>Gold source</th><th>Validation result</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Total Units / Sales / Avg Daily cards</td>
+            <td><code>agg_daily_store_sales</code></td>
+            <td class="ok">Exact match</td>
+          </tr>
+          <tr>
+            <td>Sales Value YoY %</td>
+            <td>Store sales + <code>dim_date</code> LY shift</td>
+            <td>~27–28% (SAMEPERIODLASTYEAR behaviour)</td>
+          </tr>
+          <tr>
+            <td>Demand line (by date)</td>
+            <td><code>agg_demand_trends</code></td>
+            <td class="ok">Day grain fixed — daily + rolling 7D visible</td>
+          </tr>
+          <tr>
+            <td>Sales by store</td>
+            <td><code>agg_daily_store_sales</code></td>
+            <td class="ok">CA_3 → CA_4 order matches</td>
+          </tr>
+          <tr>
+            <td>Sales by category</td>
+            <td><code>agg_daily_category_sales</code></td>
+            <td class="ok">FOODS $111M · HOUSEHOLD $57M · HOBBIES $23M</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>2. Visualization &amp; interaction (Dashboard 1 — Executive)</h2>
+      <p>
+        The Executive page is designed as a single-screen overview: KPI strip →
+        demand trend → store and category breakdown. Interaction is driven by
+        the year slicer, visual highlighting, and the star-schema filter path
+        (<code>dim_date</code> / <code>dim_store</code> → aggregates → measures).
+      </p>
+
+      <h3>2.1 Page layout (information hierarchy)</h3>
+      <pre>┌─────────────────────────────────────────────────────────────┐
+│  [ Year slicer ]                                            │
+│  [ Total Units ] [ Sales $ ] [ YoY % ] [ Avg Daily Sales ]  │
+│  [──────── Demand line: daily vs rolling 7D (wide) ───────] │
+│  [ Store ranking bar (left) ] [ Category columns (right) ]  │
+└─────────────────────────────────────────────────────────────┘</pre>
+      <table>
+        <thead>
+          <tr><th>Zone</th><th>Purpose</th><th>Why this visual</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Top — slicer</td>
+            <td>Time context for the whole page</td>
+            <td>Year is the natural planning grain for executives</td>
+          </tr>
+          <tr>
+            <td>KPI cards</td>
+            <td>Answer “how big / how growing?” in one glance</td>
+            <td>Cards minimise cognitive load; 4 measures max</td>
+          </tr>
+          <tr>
+            <td>Wide line chart</td>
+            <td>Show demand trajectory and smoothing</td>
+            <td>Line encodes time; dual series contrasts noise vs trend</td>
+          </tr>
+          <tr>
+            <td>Store bar</td>
+            <td>Rank outlets by revenue</td>
+            <td>Horizontal bar is best for long category labels (<code>store_id</code>)</td>
+          </tr>
+          <tr>
+            <td>Category column</td>
+            <td>Show mix (FOODS / HOUSEHOLD / HOBBIES)</td>
+            <td>Few categories → clustered column reads clearly</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.2 Visual-to-field map</h3>
+      <table>
+        <thead>
+          <tr><th>Visual</th><th>Type</th><th>Fields / measures</th><th>Interaction notes</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Year</td>
+            <td>Slicer</td>
+            <td><code>dim_date[year]</code></td>
+            <td>Primary filter; sync to other pages via Sync slicers</td>
+          </tr>
+          <tr>
+            <td>Total Units</td>
+            <td>Card</td>
+            <td><code>[Total Units]</code></td>
+            <td>Responds to year (and cross-highlight from other visuals)</td>
+          </tr>
+          <tr>
+            <td>Total Sales Value</td>
+            <td>Card</td>
+            <td><code>[Total Sales Value]</code></td>
+            <td>Format as Currency; avoid raw long decimals</td>
+          </tr>
+          <tr>
+            <td>Sales Value YoY %</td>
+            <td>Card</td>
+            <td><code>[Sales Value YoY %]</code></td>
+            <td>Needs date table; blank if no prior-year overlap</td>
+          </tr>
+          <tr>
+            <td>Avg Daily Sales Value</td>
+            <td>Card</td>
+            <td><code>[Avg Daily Sales Value]</code></td>
+            <td>More robust than annual totals for partial years</td>
+          </tr>
+          <tr>
+            <td>Demand trend</td>
+            <td>Line</td>
+            <td>X <code>agg_demand_trends[date]</code>; Y <code>[Daily Units]</code>, <code>[Rolling 7D Units]</code> (or columns)</td>
+            <td>Use continuous <strong>date</strong>, not Year hierarchy, for daily grain</td>
+          </tr>
+          <tr>
+            <td>Sales by store</td>
+            <td>Clustered bar</td>
+            <td>Y <code>dim_store[store_id]</code>; X <code>[Total Sales Value]</code></td>
+            <td>Sort descending; click a store to highlight / filter other visuals</td>
+          </tr>
+          <tr>
+            <td>Sales by category</td>
+            <td>Clustered column</td>
+            <td>X <code>agg_daily_category_sales[cat_id]</code>; Y <code>[Category Sales Value]</code></td>
+            <td>Click FOODS / HOUSEHOLD / HOBBIES to filter store + cards</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Interaction design</h3>
+      <table>
+        <thead>
+          <tr><th>Interaction</th><th>How it works on Executive</th><th>User value</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Year slicer filter</strong></td>
+            <td>
+              Selecting one or more years filters all visuals that depend on
+              <code>dim_date</code> (cards, demand line, store/category charts via
+              related date keys on aggs).
+            </td>
+            <td>Compare a single year or multi-year window without rebuilding the page</td>
+          </tr>
+          <tr>
+            <td><strong>Cross-filtering / highlight</strong></td>
+            <td>
+              Clicking a store bar or category column filters other visuals
+              (default Power BI edit interactions: Filter). Example: click
+              <code>CA_3</code> → cards and category chart recompute for that store
+              where relationships allow.
+            </td>
+            <td>Drill from overview → outlet or category without leaving the page</td>
+          </tr>
+          <tr>
+            <td><strong>Edit interactions</strong></td>
+            <td>
+              Format → Edit interactions: set whether a visual
+              <em>Filters</em>, <em>Highlights</em>, or <em>None</em> on peers.
+              Recommended: slicer → Filter all; category/store → Filter cards +
+              peer chart; keep demand line as Filter from year only if category
+              grain does not map cleanly.
+            </td>
+            <td>Prevent confusing blank charts when grains do not align</td>
+          </tr>
+          <tr>
+            <td><strong>Sync slicers</strong></td>
+            <td>
+              View → Sync slicers: sync <code>year</code> to Store / Product / Demand
+              pages so the same time window follows the analyst across the report.
+            </td>
+            <td>Consistent storytelling across the four-page workbook</td>
+          </tr>
+          <tr>
+            <td><strong>Tooltips</strong></td>
+            <td>
+              Default tooltips show series name + value on hover. Optional:
+              add <code>state_id</code> or <code>avg_sell_price</code> as tooltip
+              fields on the store bar.
+            </td>
+            <td>Extra context without cluttering the canvas</td>
+          </tr>
+          <tr>
+            <td><strong>Drill on date axis</strong></td>
+            <td>
+              If X-axis uses Date Hierarchy, users can drill Year → Quarter →
+              Month → Day. Prefer plain <code>date</code> for demand so daily
+              seasonality (weekends, Christmas) stays visible.
+            </td>
+            <td>Avoid accidental year roll-ups that hide calendar effects</td>
+          </tr>
+          <tr>
+            <td><strong>Sort &amp; legend</strong></td>
+            <td>
+              Store bar sorted by sales descending; demand legend distinguishes
+              daily vs rolling 7D.
+            </td>
+            <td>Ranking and trend comparison without extra clicks</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.4 Model rules that enable interaction</h3>
+      <ul>
+        <li>
+          Relationships are <strong>many-to-one (<code>*:1</code>)</strong> from
+          aggregates to dimensions, cross-filter direction <strong>Single</strong>
+          (dimension filters fact/agg — not the reverse by default).
+        </li>
+        <li>
+          <code>dim_date</code> is marked as the <strong>date table</strong> so
+          <code>SAMEPERIODLASTYEAR</code> / YoY cards respond correctly when the
+          year slicer changes.
+        </li>
+        <li>
+          Measures in <code>_Measures</code> recalculate in the current filter
+          context — cards are not static numbers; they are interactive KPIs.
+        </li>
+      </ul>
+
+      <h3>2.5 Suggested analyst click-path</h3>
+      <ol>
+        <li>Set year slicer to a full year (e.g. 2015) for clean totals.</li>
+        <li>Read the four KPI cards (size, growth, daily run-rate).</li>
+        <li>Scan the demand line for trend / seasonality (use day grain).</li>
+        <li>Click top store (<code>CA_3</code>) → see how category mix and KPIs shift.</li>
+        <li>Clear selection → click <code>FOODS</code> → see store ranking under that category.</li>
+        <li>Move to Store / Product / Demand pages with synced year for deeper detail.</li>
+      </ol>
+
+      <h3>2.6 Visualization caveats (interaction + interpretation)</h3>
+      <ul class="checklist">
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Multi-selecting all years (2011–2016) still mixes partial and full
+            years for KPI totals and YoY % — read cards with that caveat.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            Demand X-axis is plain <code>date</code> (not Date Hierarchy), so
+            daily seasonality stays visible.
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Cross-filtering between category and store works through shared date /
+            measure paths; if a visual goes blank, check Edit interactions or
+            missing relationships.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            Cards + ranked bar + category column is an appropriate executive
+            pattern: summary → trend → contribution breakdown.
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>3. Key pattern findings</h2>
+
+      <h3>3.1 Incomplete years distort annual totals (critical)</h3>
+      <p>
+        Training sales run <strong>2011-01-29 → 2016-05-22</strong>.
+        <strong>2011 has 337 days</strong>; <strong>2016 has only 143 days</strong>
+        (through 22 May). Full calendar years are 2012–2015 only.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th><th>Days</th><th>Total units</th>
+            <th>Avg daily units</th><th>Sales value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2011</td><td>337</td><td>8.86M</td><td>26,281</td><td>$23.89M</td></tr>
+          <tr><td>2012</td><td>366</td><td>12.06M</td><td>32,956</td><td>$32.65M</td></tr>
+          <tr><td>2013</td><td>365</td><td>13.14M</td><td>35,988</td><td>$35.92M</td></tr>
+          <tr><td>2014</td><td>365</td><td>13.09M</td><td>35,862</td><td>$37.86M</td></tr>
+          <tr><td>2015</td><td>365</td><td>13.80M</td><td>37,810</td><td>$42.42M</td></tr>
+          <tr><td>2016</td><td>143</td><td>5.98M</td><td>41,835</td><td>$18.84M</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Finding:</strong> Before the fix, a year-grain demand chart made
+        2016 look like a collapse. With the updated <strong>daily</strong> line,
+        demand clearly trends upward and 2016 remains strong on a per-day basis
+        (~41.8K avg daily units vs ~37.8K in 2015). Annual KPI totals can still
+        look low for 2016 when all years are selected — that is
+        <strong>partial-year coverage</strong> (143 days), not a demand crash.
+        Prefer average daily metrics or same-calendar-window YoY
+        (Jan–22 May 2016 vs Jan–22 May 2015: sales +18.0%).
+      </p>
+
+      <h3>3.2 Growth is real on comparable years</h3>
+      <p>
+        On full years 2012→2015, sales CAGR is about <strong>9.1%</strong>.
+        Year-over-year sales: 2013 +10.0%, 2014 +5.4%, 2015 +12.0%.
+        Units grew more slowly than sales in later years (price / mix effects).
+        The dashboard YoY card (~27%) reflects a DAX
+        <code>SAMEPERIODLASTYEAR</code> over the full selected range (including
+        asymmetric year edges), not a clean full-year 2015 vs 2014 compare.
+      </p>
+
+      <h3>3.3 Store concentration — CA_3 dominates</h3>
+      <p>
+        Ten M5 stores across CA / TX / WI. Ranking by sales value matches the
+        dashboard bar chart exactly:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th>Store</th><th>Sales</th><th>Share of total</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>CA_3</td><td>$32.70M</td><td>17.1%</td></tr>
+          <tr><td>2</td><td>CA_1</td><td>$22.95M</td><td>12.0%</td></tr>
+          <tr><td>3</td><td>TX_2</td><td>$20.89M</td><td>10.9%</td></tr>
+          <tr><td>…</td><td>…</td><td>…</td><td>…</td></tr>
+          <tr><td>10</td><td>CA_4</td><td>$12.47M</td><td>6.5%</td></tr>
+        </tbody>
+      </table>
+      <p>
+        <strong>Finding:</strong> CA_3 sells ~<strong>2.6×</strong> CA_4.
+        Top 3 stores ≈ <strong>40%</strong> of sales. State mix:
+        CA 44.9% · TX 28.8% · WI 26.4%. California is both the largest region
+        and the home of the best and worst stores — store-level ops matter more
+        than state label alone.
+      </p>
+
+      <h3>3.4 Category mix — FOODS is the business</h3>
+      <p>
+        FOODS <strong>$111.1M (58.0%)</strong>, HOUSEHOLD <strong>$57.1M (29.8%)</strong>,
+        HOBBIES <strong>$23.3M (12.2%)</strong>. FOODS share drifts down slightly
+        across full years (≈60% in 2011–12 → ≈55% in 2015) as HOUSEHOLD/HOBBIES
+        grow, but FOODS remains the primary revenue engine and the natural
+        focus for demand-planning accuracy.
+      </p>
+
+      <h3>3.5 Calendar &amp; seasonality</h3>
+      <ul>
+        <li>
+          <strong>Christmas:</strong> 25 Dec each year has near-zero demand
+          (11–20 units network-wide) — stores effectively closed; keep this in
+          any forecast baseline.
+        </li>
+        <li>
+          <strong>Week:</strong> Sat–Sun highest (~41K avg daily units);
+          Tue–Thu lowest (~30–30.5K). Weekend uplift ≈ +35% vs midweek.
+        </li>
+        <li>
+          <strong>Month (2012–2015):</strong> softest in Jan; stronger Jun–Sep
+          (summer peak for this FMCG panel).
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>4. Dashboard quality notes</h2>
+      <ul class="checklist">
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Total Sales Value card</strong> formatted (shows
+            <strong>191.58M</strong>, not raw long decimals).
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Demand line</strong> uses continuous <code>date</code>
+            (daily units + rolling 7D avg). Seasonality and Christmas dips visible.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Comparable YoY card added:</strong>
+            <code>Sales Value 2016 YTD vs 2015 YTD %</code> shows
+            <strong>0.18 (18%)</strong> for Jan 1–May 22 vs same window prior year.
+            Keep the all-years <code>Sales Value YoY %</code> (27.08%) only as a
+            SAMEPERIODLASTYEAR illustration — prefer the YTD card for the growth story.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>Store ranking and category columns match Gold aggregates.</span>
+        </li>
+      </ul>
+      <p>
+        Optional polish: format the YTD card as <strong>Percentage</strong> with
+        1–2 decimals so it displays <strong>18.0%</strong> instead of <strong>0.18</strong>.
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>5. What a data-analysis project report should include</h2>
+      <p>
+        For this Walmart M5 platform project, a complete analysis write-up
+        (course / portfolio / stakeholder pack) should cover the sections below —
+        not only dashboard screenshots.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Section</th><th>What to deliver</th><th>This project status</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1. Problem &amp; objective</td>
+            <td>Business question (demand visibility, store/category performance), success criteria</td>
+            <td>FMCG demand platform on M5 — defined</td>
+          </tr>
+          <tr>
+            <td>2. Data understanding</td>
+            <td>Sources, grain, time span, entities (item/store/day), known gaps</td>
+            <td>Reports 01–02; partial 2011/2016 documented here</td>
+          </tr>
+          <tr>
+            <td>3. Pipeline / methodology</td>
+            <td>Ingestion → Medallion → orchestration; reproducible transforms</td>
+            <td>Reports 02–07 complete</td>
+          </tr>
+          <tr>
+            <td>4. Data quality</td>
+            <td>Row counts, nulls, price coverage, referential integrity, outliers (Christmas)</td>
+            <td>Gold 79.2% priced facts; calendar zeros noted</td>
+          </tr>
+          <tr>
+            <td>5. Exploratory analysis (EDA)</td>
+            <td>Trends, seasonality, concentration, category mix — with numbers</td>
+            <td>This page (Executive) + gold_export script</td>
+          </tr>
+          <tr>
+            <td>6. Visualization &amp; interaction</td>
+            <td>Layout hierarchy, chart choices, slicers, cross-filter, sync, click-paths</td>
+            <td>Section 2 of this report</td>
+          </tr>
+          <tr>
+            <td>7. BI / dashboard design</td>
+            <td>Model relationships, DAX definitions, page layout, limitations</td>
+            <td><code>powerbi/documentation/</code></td>
+          </tr>
+          <tr>
+            <td>8. Findings &amp; recommendations</td>
+            <td>Actionable insights (store focus, FOODS priority, YoY caveats)</td>
+            <td>Section 2 above</td>
+          </tr>
+          <tr>
+            <td>9. Limitations &amp; next work</td>
+            <td>No causal promo model yet; forecast horizon; more DQ tests</td>
+            <td>Pages 2–4 Store/Product/Demand still to analyse formally</td>
+          </tr>
+          <tr>
+            <td>10. Appendix</td>
+            <td>Table schemas, DAX list, job IDs, how to refresh</td>
+            <td>Existing docs + Gold export path</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>6. Recommendations (from Executive view)</h2>
+      <ol>
+        <li>
+          Optional polish: format <strong>2016 YTD vs 2015 YTD</strong> as
+          Percentage (18.0%) instead of 0.18.
+        </li>
+        <li>
+          Caption the demand chart if needed:
+          “2016 series ends 22 May (partial year)”.
+        </li>
+        <li>
+          Treat <strong>CA_3</strong> as the benchmark store and
+          <strong>CA_4</strong> as a turnaround / assortment study case.
+        </li>
+        <li>
+          Weight demand-planning effort toward <strong>FOODS</strong> (58% sales)
+          while monitoring HOUSEHOLD growth share.
+        </li>
+        <li>
+          Always exclude or specially model <strong>25 Dec</strong> in
+          forecasting baselines.
+        </li>
+        <li>
+          Re-run <code>python scripts/analyze_executive_dashboard.py</code>
+          after each Gold refresh to confirm the dashboard still matches export.
+        </li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>7. Reproduce</h2>
+      <pre><code>python scripts/analyze_executive_dashboard.py</code></pre>
+      <p>
+        Inputs: <code>data/gold_export/agg_*.parquet</code>,
+        <code>dim_date.parquet</code>.
+        Dashboard screenshot:
+        <a href="assets/executive-dashboard-page1.png"><code>assets/executive-dashboard-page1.png</code></a>
+        (Figure 1 above). Power BI page <strong>Executive</strong>
+        with years 2011–2016 selected.
+      </p>
+    </section>
+
+    <p class="footer">
+      Open <code>reports/08-executive-dashboard-analysis.html</code> ·
+      validated against gold_export · Sep 2026
+    </p>
+  </div>
+</body>
+</html>

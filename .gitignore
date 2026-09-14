@@ -1,0 +1,27 @@
+.venv/
+*.zip
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Never commit large data blobs (GitHub hard limit: 100 MB / file)
+*.parquet
+*.csv
+
+# Data directories (recreate via Kaggle download + export script)
+data/raw/**
+data/gold_export/**
+data/ingestion/manifests/*.json
+data/ingestion/bronze_staging/
+
+# Keep folder placeholders
+!data/raw/
+!data/raw/.gitkeep
+!data/gold_export/
+!data/gold_export/.gitkeep
+
+# Airflow runtime
+airflow/logs/*
+!airflow/logs/.gitkeep
+airflow/.env

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Step 1 · Raw Dataset — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 1 report · Raw dataset</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html" aria-current="page">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 01 · Complete</div>
+      <h1>Walmart M5 raw dataset acquired and staged</h1>
+      <p>
+        The pipeline starts with the Kaggle <strong>M5 Forecasting – Accuracy</strong>
+        competition files. Three production source CSVs were placed under
+        <code>data/raw/</code> as the immutable landing zone for all later Bronze work.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">Status: done</span>
+        <span class="chip">Source: Kaggle competition</span>
+        <span class="chip">Path: data/raw/</span>
+      </div>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">calendar.csv</div>
+        <div class="value">101 KB</div>
+        <div class="hint">1,969 date rows</div>
+      </article>
+      <article class="stat">
+        <div class="label">sales_train_evaluation.csv</div>
+        <div class="value">116 MB</div>
+        <div class="hint">30,490 item×store series</div>
+      </article>
+      <article class="stat">
+        <div class="label">sell_prices.csv</div>
+        <div class="value">194 MB</div>
+        <div class="hint">6,841,121 price rows</div>
+      </article>
+      <article class="stat">
+        <div class="label">Day columns</div>
+        <div class="value">1,941</div>
+        <div class="hint">d_1 … d_1941 in sales</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>Why these three files?</h2>
+      <p style="margin-bottom:1rem;">
+        The competition zip contains additional files, but the data engineering project
+        uses only the sources required for a full historical sales, calendar, and price spine.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Role</th>
+            <th>Decision</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>calendar.csv</code></td>
+            <td>Date dimension, events, SNAP flags, Walmart week ids</td>
+            <td><span class="badge ok">Required</span></td>
+          </tr>
+          <tr>
+            <td><code>sales_train_evaluation.csv</code></td>
+            <td>Full daily unit sales history (wide format)</td>
+            <td><span class="badge ok">Required</span></td>
+          </tr>
+          <tr>
+            <td><code>sell_prices.csv</code></td>
+            <td>Weekly sell prices by store and item</td>
+            <td><span class="badge ok">Required</span></td>
+          </tr>
+          <tr>
+            <td><code>sales_train_validation.csv</code></td>
+            <td>Earlier subset of the same history</td>
+            <td><span class="badge pending">Skipped</span></td>
+          </tr>
+          <tr>
+            <td><code>sample_submission.csv</code></td>
+            <td>Forecast competition submission template</td>
+            <td><span class="badge pending">Skipped</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Observed schemas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Columns</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>calendar</td>
+            <td>14</td>
+            <td>
+              <code>date, wm_yr_wk, weekday, wday, month, year, d,
+              event_name_1/2, event_type_1/2, snap_CA/TX/WI</code>
+            </td>
+          </tr>
+          <tr>
+            <td>sales</td>
+            <td>1,947</td>
+            <td>
+              Identity cols <code>id, item_id, dept_id, cat_id, store_id, state_id</code>
+              plus <code>d_1</code>…<code>d_1941</code>
+            </td>
+          </tr>
+          <tr>
+            <td>sell_prices</td>
+            <td>4</td>
+            <td><code>store_id, item_id, wm_yr_wk, sell_price</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Repository structure after Step 1</h2>
+      <pre>walmart-m5/
+├── data/
+│   └── raw/
+│       ├── calendar.csv
+│       ├── sales_train_evaluation.csv
+│       └── sell_prices.csv
+├── airflow/
+├── src/
+├── notebooks/
+└── README.md</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>What this step unlocked</h2>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>Immutable raw landing zone for Medallion Bronze</span></li>
+        <li><span class="mark">✓</span><span>Clear source-of-truth files for sales, prices, and calendar</span></li>
+        <li><span class="mark">✓</span><span>Baseline for schema contracts and row-count expectations</span></li>
+        <li><span class="mark">✓</span><span>Ready for Python ingestion validation (Step 2)</span></li>
+      </ul>
+    </section>
+
+    <p class="footer"><a href="index.html">← Overview</a> · <a href="02-python-ingestion.html">Next: Python Ingestion →</a></p>
+  </div>
+</body>
+</html>

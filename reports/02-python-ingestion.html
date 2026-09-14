@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Step 2 · Python Ingestion — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 2 report · Python ingestion</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html" aria-current="page">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 02 · Complete</div>
+      <h1>Python ingestion gate: detect, validate, and stamp metadata</h1>
+      <p>
+        Stage 1 Python code now acts as the quality gate before Airflow / Databricks.
+        It confirms every raw file is present, large enough, schema-correct, and
+        row-count complete, then emits a batch manifest for Bronze enrichment.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">status = ready</span>
+        <span class="chip mono">m5_20260907T000027Z_34b8d78f</span>
+        <span class="chip">CLI: python src/ingestion/run_ingestion.py</span>
+      </div>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">calendar</div>
+        <div class="value">OK</div>
+        <div class="hint">1,969 rows · bronze_calendar</div>
+      </article>
+      <article class="stat">
+        <div class="label">sales</div>
+        <div class="value">OK</div>
+        <div class="hint">30,490 rows · bronze_sales</div>
+      </article>
+      <article class="stat">
+        <div class="label">sell_prices</div>
+        <div class="value">OK</div>
+        <div class="hint">6,841,121 rows · bronze_sell_prices</div>
+      </article>
+      <article class="stat">
+        <div class="label">Manifest</div>
+        <div class="value">Written</div>
+        <div class="hint">data/ingestion/manifests/</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>What the Python layer does</h2>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>Detect source files under <code>data/raw/</code></span></li>
+        <li><span class="mark">✓</span><span>Validate file availability</span></li>
+        <li><span class="mark">✓</span><span>Check basic schema / required columns</span></li>
+        <li><span class="mark">✓</span><span>Check minimum file size</span></li>
+        <li><span class="mark">✓</span><span>Assert expected row counts</span></li>
+        <li><span class="mark">✓</span><span>Generate ingestion metadata (<code>_batch_id</code>, <code>_ingestion_timestamp</code>, <code>_source_file</code>, <code>_ingestion_date</code>)</span></li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>Package layout added in Step 2</h2>
+      <pre>src/
+├── config.py                 # paths + expected contracts
+├── ingestion/
+│   ├── metadata.py           # batch ids + manifest builder
+│   └── run_ingestion.py      # CLI entrypoint
+├── validation/
+│   └── raw_files.py          # availability / schema / size / rows
+├── transformations/          # placeholder for later Silver/Gold
+└── utils/
+    ├── logging_utils.py
+    └── paths.py</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>Latest validation results</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Rows</th>
+            <th>Size</th>
+            <th>Checks</th>
+            <th>Bronze target</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>calendar.csv</code></td>
+            <td>1,969</td>
+            <td>103,469 bytes</td>
+            <td><span class="badge ok">all passed</span></td>
+            <td><code>bronze_calendar</code></td>
+          </tr>
+          <tr>
+            <td><code>sales_train_evaluation.csv</code></td>
+            <td>30,490</td>
+            <td>121,736,518 bytes</td>
+            <td><span class="badge ok">all passed</span></td>
+            <td><code>bronze_sales</code></td>
+          </tr>
+          <tr>
+            <td><code>sell_prices.csv</code></td>
+            <td>6,841,121</td>
+            <td>203,395,785 bytes</td>
+            <td><span class="badge ok">all passed</span></td>
+            <td><code>bronze_sell_prices</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem;color:var(--ink-soft);">
+        Sales-specific contract also verified <code>d_1</code>…<code>d_1941</code>
+        (1,941 day columns).
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>Metadata fields stamped for Bronze</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Field</th>
+            <th>Purpose</th>
+            <th>Example</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>_batch_id</code></td>
+            <td>Tie all files in one ingestion run</td>
+            <td><code>m5_20260907T000027Z_34b8d78f</code></td>
+          </tr>
+          <tr>
+            <td><code>_ingestion_timestamp</code></td>
+            <td>UTC timestamp of the batch</td>
+            <td><code>2026-09-07T00:00:27.596014+00:00</code></td>
+          </tr>
+          <tr>
+            <td><code>_ingestion_date</code></td>
+            <td>Calendar date partition helper</td>
+            <td><code>2026-09-07</code></td>
+          </tr>
+          <tr>
+            <td><code>_source_file</code></td>
+            <td>Lineage back to raw CSV name</td>
+            <td><code>calendar.csv</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>How to re-run</h2>
+      <pre>python src/ingestion/run_ingestion.py
+
+# outputs:
+# data/ingestion/manifests/&lt;batch_id&gt;.json
+# data/ingestion/manifests/latest.json
+# exit code 0 = ready for Airflow → Bronze</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>Ready for the next architecture step</h2>
+      <p>
+        With a <strong>ready</strong> manifest, the project can move to
+        <strong>Apache Airflow</strong>: wire tasks for
+        <code>check_source_files</code> → <code>validate_raw_files</code> →
+        parallel Bronze loads for sales, prices, and calendar.
+      </p>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>Local Python gate proven against real M5 files</span></li>
+        <li><span class="mark">✓</span><span>Bronze table targets named</span></li>
+        <li><span class="mark">○</span><span>Airflow DAG + Databricks Bronze load still pending</span></li>
+      </ul>
+    </section>
+
+    <p class="footer"><a href="01-raw-dataset.html">← Raw Dataset</a> · <a href="03-airflow.html">Next: Airflow →</a> · <a href="index.html">Overview</a></p>
+  </div>
+</body>
+</html>

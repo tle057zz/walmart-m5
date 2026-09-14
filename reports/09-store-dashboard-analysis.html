@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>09 · Store Dashboard Analysis — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 9 report · Store dashboard analysis</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html" aria-current="page">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 09 · Dashboard 2</div>
+      <h1>Store dashboard: DAX used, visualization, validation &amp; findings</h1>
+      <p>
+        Analysis of the Power BI <strong>Store</strong> page against
+        <code>data/gold_export/</code>
+        (<code>agg_daily_store_sales</code>, <code>agg_store_category_sales</code>,
+        <code>dim_store</code>, <code>dim_date</code>).
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">KPIs match Gold</span>
+        <span class="chip ok">Demand line at day grain</span>
+        <span class="chip ok">Matrix column totals fixed</span>
+        <span class="chip">10 stores · CA / TX / WI</span>
+        <span class="chip">Years 2011–2016</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Part A — DAX measures used on Store (Page 2)</h2>
+      <p>
+        Full 33-measure catalogue lives on
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>.
+        Store page uses these measures (paste-ready):
+      </p>
+      <pre>/* Cards + bar + summary */
+Total Units =
+SUM ( 'agg_daily_store_sales'[units_sold] )
+
+Total Sales Value =
+SUM ( 'agg_daily_store_sales'[sales_value] )
+
+Avg Sell Price =
+AVERAGE ( 'agg_daily_store_sales'[avg_sell_price] )
+
+/* Matrix — category share (format %) */
+Category Share =
+AVERAGE ( 'agg_store_category_sales'[category_sales_share] )</pre>
+      <p>
+        Line chart on this page typically uses the column
+        <code>agg_daily_store_sales[units_sold]</code> (Sum) with Legend
+        <code>store_id</code> — not a separate measure.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Measure / field</th><th>Visual</th><th>Format</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>[Total Units]</code></td><td>Card, summary table</td><td>Whole number</td></tr>
+          <tr><td><code>[Total Sales Value]</code></td><td>Card, donut, bar, table</td><td>Currency $</td></tr>
+          <tr><td><code>[Avg Sell Price]</code></td><td>Summary table</td><td>Currency $</td></tr>
+          <tr><td><code>[Category Share]</code></td><td>Matrix values</td><td>Percentage</td></tr>
+          <tr><td><code>units_sold</code> (column)</td><td>Line Y-axis</td><td>Sum</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Part B — Dashboard 2 screenshot (updated)</h2>
+      <p>
+        Power BI page <strong>STORE</strong> after layout polish: year + store slicers,
+        state donut, daily units-by-store line, category share matrix (no bogus
+        33% column), store summary table, and store ranking bar. Sales card still
+        needs tighter currency formatting (see §4).
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/store-dashboard-page2.png"
+          alt="Power BI Store dashboard: year and store slicers, KPI cards, state donut, units by date and store, category share matrix, store summary, sales by store bar"
+          loading="lazy"
+        />
+        <figcaption>
+          Figure 1. Store dashboard (Page 2, updated) — CA 44.9% · CA_3 top ·
+          FOODS ~58% mix · daily multi-store trend · units 67M · sales $191.58M
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">Total Units</div>
+        <div class="value">66.9M</div>
+        <div class="hint">Exact 66,927,173</div>
+      </article>
+      <article class="stat">
+        <div class="label">Total Sales</div>
+        <div class="value">$191.58M</div>
+        <div class="hint">Matches Executive</div>
+      </article>
+      <article class="stat">
+        <div class="label">CA share</div>
+        <div class="value">44.9%</div>
+        <div class="hint">$85.97M</div>
+      </article>
+      <article class="stat">
+        <div class="label">CA_3 / CA_4</div>
+        <div class="value">2.62×</div>
+        <div class="hint">Largest vs smallest store</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>1. Scope &amp; method</h2>
+      <table>
+        <thead>
+          <tr><th>Dashboard visual</th><th>Gold source</th><th>Validation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>KPI cards</td>
+            <td><code>agg_daily_store_sales</code></td>
+            <td class="ok">67M units · $191.58M sales</td>
+          </tr>
+          <tr>
+            <td>Donut by state</td>
+            <td><code>dim_store[state_id]</code> + <code>[Total Sales Value]</code></td>
+            <td class="ok">CA $85.97M (44.9%) · TX $55.12M (28.8%) · WI $50.49M (26.4%)</td>
+          </tr>
+          <tr>
+            <td>Store ranking bar</td>
+            <td><code>dim_store[store_id]</code> + sales</td>
+            <td class="ok">CA_3 → … → CA_4 order matches</td>
+          </tr>
+          <tr>
+            <td>Units by date × store line</td>
+            <td><code>agg_daily_store_sales</code></td>
+            <td class="ok">Day grain fixed; use store slicer to reduce spaghetti</td>
+          </tr>
+          <tr>
+            <td>Category share matrix</td>
+            <td><code>agg_store_category_sales[category_sales_share]</code></td>
+            <td class="ok">Per-store shares; column totals removed / total row ~58/12/30</td>
+          </tr>
+          <tr>
+            <td>Store summary table</td>
+            <td>dims + measures</td>
+            <td class="ok">Avg price band $4.34–$4.45</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>2. Visualization &amp; interaction</h2>
+
+      <h3>2.1 Layout</h3>
+      <pre>┌──────────────────────────────────────────────────────────────┐
+│ [ Year slicer ]              [ Total Units ] [ Sales Value ] │
+│ [ store_id slicer ]  [ State donut ]  [ Units by date×store ]│
+│ [ Category share matrix ] [ Store summary ] [ Store ranking ]│
+└──────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>2.2 Visual-to-field map</h3>
+      <table>
+        <thead>
+          <tr><th>Visual</th><th>Type</th><th>Fields</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Year</td>
+            <td>Slicer</td>
+            <td><code>dim_date[year]</code></td>
+          </tr>
+          <tr>
+            <td>Store</td>
+            <td>Slicer</td>
+            <td><code>dim_store[store_id]</code> or <code>agg_daily_store_sales[store_id]</code></td>
+          </tr>
+          <tr>
+            <td>KPIs</td>
+            <td>Cards</td>
+            <td><code>[Total Units]</code>, <code>[Total Sales Value]</code></td>
+          </tr>
+          <tr>
+            <td>Sales by state</td>
+            <td>Donut</td>
+            <td>Legend <code>state_id</code> · Values <code>[Total Sales Value]</code></td>
+          </tr>
+          <tr>
+            <td>Store ranking</td>
+            <td>Clustered bar</td>
+            <td>Y <code>store_id</code> · X <code>[Total Sales Value]</code> (sort desc)</td>
+          </tr>
+          <tr>
+            <td>Daily/annual units by store</td>
+            <td>Line</td>
+            <td>X <code>date</code> (or year) · Legend <code>store_id</code> · Y <code>units_sold</code></td>
+          </tr>
+          <tr>
+            <td>Category share</td>
+            <td>Matrix</td>
+            <td>Rows <code>store_id</code> · Columns <code>cat_id</code> · Values <code>[Category Share]</code></td>
+          </tr>
+          <tr>
+            <td>Store summary</td>
+            <td>Table</td>
+            <td><code>store_id</code>, <code>state_id</code>, <code>[Total Units]</code>, <code>[Total Sales Value]</code>, <code>[Avg Sell Price]</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Interaction design</h3>
+      <table>
+        <thead>
+          <tr><th>Control</th><th>Behaviour</th><th>Analyst use</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Year slicer</strong></td>
+            <td>Filters all date-related visuals and measures</td>
+            <td>Isolate a full year (e.g. 2015) before comparing stores</td>
+          </tr>
+          <tr>
+            <td><strong>store_id slicer</strong></td>
+            <td>
+              Multi-select filters donut, bar, line, matrix, table, cards.
+              Set Format → Slicer settings → Selection →
+              <strong>Multi-select with CTRL = Off</strong> so checkboxes toggle
+              without clearing prior picks.
+            </td>
+            <td>Compare CA_3 vs CA_4, or limit line chart to ≤3 stores</td>
+          </tr>
+          <tr>
+            <td><strong>Donut click (state)</strong></td>
+            <td>Cross-filters store bar, line, tables to that state</td>
+            <td>Focus CA vs TX vs WI without leaving the page</td>
+          </tr>
+          <tr>
+            <td><strong>Bar click (store)</strong></td>
+            <td>Highlights / filters peer visuals for one outlet</td>
+            <td>Inspect one store’s category mix and trend</td>
+          </tr>
+          <tr>
+            <td><strong>Sync slicers</strong></td>
+            <td>Sync year (and optionally store) with Executive / Demand</td>
+            <td>Keep time context consistent across pages</td>
+          </tr>
+          <tr>
+            <td><strong>Edit interactions</strong></td>
+            <td>Prefer Filter for slicers; Highlight optional for line series</td>
+            <td>Avoid blank matrix when grains conflict</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.4 Suggested click-path</h3>
+      <ol>
+        <li>Set year to a full calendar year (2015) for fair store ranks.</li>
+        <li>Read donut — confirm CA ≈ 45% of sales.</li>
+        <li>Note CA_3 vs CA_4 gap on the ranking bar.</li>
+        <li>Click CA on the donut → inspect CA-only line trends and matrix.</li>
+        <li>Clear → select CA_3 and CA_4 in store slicer → compare mix and price.</li>
+        <li>Return to all stores → read FOODS share stability in the matrix.</li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>3. Key pattern findings</h2>
+
+      <h3>3.1 California leads; CA_3 is the flagship</h3>
+      <table>
+        <thead>
+          <tr><th>State</th><th>Sales</th><th>Share</th><th>Units</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>CA</td><td>$85.97M</td><td>44.9%</td><td>29.2M</td></tr>
+          <tr><td>TX</td><td>$55.12M</td><td>28.8%</td><td>19.2M</td></tr>
+          <tr><td>WI</td><td>$50.49M</td><td>26.4%</td><td>18.5M</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Within California, CA_3 alone is <strong>38%</strong> of CA sales and
+        <strong>17.1%</strong> of network sales ($32.70M). CA_4 is last network-wide
+        ($12.47M). Ratio <strong>CA_3 / CA_4 = 2.62×</strong>. California contains both
+        the best and worst stores — state label alone does not explain performance.
+      </p>
+
+      <h3>3.2 Store ranking (matches dashboard bar)</h3>
+      <table>
+        <thead>
+          <tr><th>Rank</th><th>Store</th><th>Units</th><th>Sales</th><th>Avg sell price*</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>CA_3</td><td>11.36M</td><td>$32.70M</td><td>$4.37</td></tr>
+          <tr><td>2</td><td>CA_1</td><td>7.83M</td><td>$22.95M</td><td>$4.39</td></tr>
+          <tr><td>3</td><td>TX_2</td><td>7.33M</td><td>$20.89M</td><td>$4.34</td></tr>
+          <tr><td>4</td><td>TX_3</td><td>6.21M</td><td>$18.19M</td><td>$4.37</td></tr>
+          <tr><td>5</td><td>WI_2</td><td>6.70M</td><td>$18.13M</td><td>$4.43</td></tr>
+          <tr><td>6</td><td>CA_2</td><td>5.82M</td><td>$17.85M</td><td>$4.43</td></tr>
+          <tr><td>7</td><td>WI_3</td><td>6.54M</td><td>$17.25M</td><td>$4.40</td></tr>
+          <tr><td>8</td><td>TX_1</td><td>5.69M</td><td>$16.04M</td><td>$4.35</td></tr>
+          <tr><td>9</td><td>WI_1</td><td>5.26M</td><td>$15.11M</td><td>$4.45</td></tr>
+          <tr><td>10</td><td>CA_4</td><td>4.18M</td><td>$12.47M</td><td>$4.40</td></tr>
+        </tbody>
+      </table>
+      <p><em>*Mean of daily <code>avg_sell_price</code> on <code>agg_daily_store_sales</code>.</em></p>
+
+      <h3>3.3 Category mix is FOODS-led in every store</h3>
+      <p>
+        Mean category sales share across stores:
+        <strong>FOODS 58.1%</strong> · <strong>HOUSEHOLD 29.5%</strong> ·
+        <strong>HOBBIES 12.4%</strong>. Extremes:
+      </p>
+      <ul>
+        <li>Highest FOODS: <strong>WI_2 64.5%</strong>, WI_3 63.5%</li>
+        <li>Lowest FOODS / highest HOUSEHOLD: <strong>CA_2</strong> (FOODS 49.3%, HOUSEHOLD 38.4%)</li>
+        <li>Highest HOBBIES: WI_1 15.7%, CA_4 15.3%</li>
+      </ul>
+      <p>
+        Assortment differs by store, but FOODS remains the primary revenue engine
+        everywhere — consistent with Executive category columns.
+      </p>
+
+      <h3>3.4 Prices are tightly clustered</h3>
+      <p>
+        Store-level average sell prices sit in a narrow band
+        <strong>$4.34–$4.45</strong> (network ~$4.39). CA_3’s leadership is
+        <strong>volume</strong>, not a higher price point. TX stores skew slightly
+        cheaper; WI_1 is the dearest on this metric.
+      </p>
+
+      <h3>3.5 Partial 2016 coverage still matters for KPIs</h3>
+      <p>
+        The units line is now at <strong>day</strong> grain (good). KPI cards and
+        ranked totals with all years selected still include only
+        <strong>143 days in 2016</strong> (through 22 May). Network average daily
+        units rise from ~37.8K (2015) to ~41.8K (2016 YTD) — so filter to a full
+        year when comparing store ranks for stakeholders.
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>4. Dashboard quality notes</h2>
+      <ul class="checklist">
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Category share matrix:</strong> bogus per-row Total column at
+            33.33% removed. Total row now shows overall mix
+            (~FOODS 58% · HOBBIES 12% · HOUSEHOLD 30%), consistent with Gold.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Units line</strong> uses continuous <code>date</code>
+            (“Sum of units_sold by date and store_id”), not year roll-up.
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            <strong>Total Sales Value card</strong> still shows long decimals
+            ($191.57754604M). Match Executive: Currency + display units Millions,
+            2 decimal places → <strong>$191.58M</strong>.
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            <strong>Line chart density:</strong> all 10 stores on one daily chart
+            is hard to read. Use the store slicer (multi-select ≤3) or
+            Small multiples by <code>store_id</code>.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            Donut + ranked bar + matrix + summary table remain a solid store-ops
+            layout; year + store slicers support focused comparison.
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>5. Recommendations</h2>
+      <ol>
+        <li>Benchmark ops and assortment against <strong>CA_3</strong>; deep-dive <strong>CA_4</strong> and high-HOUSEHOLD <strong>CA_2</strong>.</li>
+        <li>Format the Store page sales card like Executive (<strong>$191.58M</strong>).</li>
+        <li>Limit the daily line to ≤3 stores via slicer (Multi-select with CTRL = Off) or use small multiples.</li>
+        <li>Use full-year filters (2012–2015) when ranking stores for stakeholders.</li>
+        <li>Keep price monitoring light — dispersion is small; volume and mix drive gaps.</li>
+        <li>Sync year slicer with Executive; optionally sync store_id when drilling from Page 1.</li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>6. Reproduce</h2>
+      <pre><code>python - &lt;&lt;'PY'
+import pandas as pd
+from pathlib import Path
+P = Path('data/gold_export')
+s = pd.read_parquet(P/'agg_daily_store_sales.parquet')
+print(s.groupby('state_id')['sales_value'].sum())
+print(s.groupby('store_id')['sales_value'].sum().sort_values(ascending=False))
+print(pd.read_parquet(P/'agg_store_category_sales.parquet')
+      .pivot_table(index='store_id', columns='cat_id', values='category_sales_share'))
+PY</code></pre>
+      <p>
+        Screenshot:
+        <a href="assets/store-dashboard-page2.png"><code>assets/store-dashboard-page2.png</code></a>.
+        Related: <a href="08-executive-dashboard-analysis.html">08 Executive</a>.
+      </p>
+    </section>
+
+    <p class="footer">
+      Open <code>reports/09-store-dashboard-analysis.html</code> ·
+      validated against gold_export · Sep 2026
+    </p>
+  </div>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>06 · Databricks Gold — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 6 report · Databricks Gold</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html" aria-current="page">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 06 · Complete</div>
+      <h1>Gold layer: star schema + BI aggregates</h1>
+      <p>
+        Gold publishes business-ready dimensions, facts, and aggregate tables for
+        retail / demand-planning analytics. Notebooks <code>05</code>–<code>07</code>
+        all completed successfully after fixing an ambiguous <code>state_id</code>
+        join in facts.
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">Notebooks 05–07 finished</span>
+        <span class="chip">Schema: walmart_m5_gold</span>
+        <span class="chip ok">12 Gold tables</span>
+      </div>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat"><div class="label">Dimensions</div><div class="value">3</div><div class="hint">date · product · store</div></article>
+      <article class="stat"><div class="label">Facts</div><div class="value">2</div><div class="hint">daily sales · prices</div></article>
+      <article class="stat"><div class="label">Aggregates</div><div class="value">7</div><div class="hint">BI marts</div></article>
+      <article class="stat"><div class="label">fact_daily_sales</div><div class="value">59.2M</div><div class="hint">79.2% priced</div></article>
+    </section>
+
+    <section class="panel section">
+      <h2>Star schema</h2>
+      <div class="dag" aria-label="Gold star schema">
+        <div class="dag-node">dim_date</div>
+        <div class="dag-arrow">↕</div>
+        <div class="dag-branch">
+          <div class="dag-node">dim_product</div>
+          <div class="dag-node bookend">fact_daily_sales</div>
+          <div class="dag-node">dim_store</div>
+        </div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">fact_product_prices</div>
+      </div>
+      <pre style="margin-top:1rem;">sales_value = quantity * sell_price
+snap_flag   = SNAP day for the store's state (CA/TX/WI)
+event_flag  = calendar event day</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>05 — Dimensions</h2>
+      <table>
+        <thead><tr><th>Table</th><th>Rows</th><th>Key</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td><code>dim_date</code></td><td>1,969</td><td><code>date_key</code> (yyyyMMdd)</td><td>events + SNAP attributes</td></tr>
+          <tr><td><code>dim_product</code></td><td>3,049</td><td><code>product_key</code></td><td>item / dept / category</td></tr>
+          <tr><td><code>dim_store</code></td><td>10</td><td><code>store_key</code></td><td>store + state</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>06 — Facts</h2>
+      <table>
+        <thead><tr><th>Table</th><th>Rows</th><th>Grain</th><th>Quality</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>fact_product_prices</code></td>
+            <td>6,841,121</td>
+            <td>store × item × wm_yr_wk</td>
+            <td>written OK</td>
+          </tr>
+          <tr>
+            <td><code>fact_daily_sales</code></td>
+            <td>59,181,090</td>
+            <td>date × product × store</td>
+            <td>0 null keys · 0 duplicate grain · 79.2% rows have price</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="margin-top:1rem;color:var(--ink-soft);">
+        First run failed with <code>AMBIGUOUS_REFERENCE state_id</code> after joining
+        <code>dim_store</code>. Fixed by joining only <code>store_key/store_id</code>
+        and keeping <code>state_id</code> from sales. Re-run succeeded.
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>07 — Aggregations (Power BI ready)</h2>
+      <table>
+        <thead><tr><th>Table</th><th>Rows</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>agg_daily_store_sales</code></td><td>19,410</td><td>Store performance by day</td></tr>
+          <tr><td><code>agg_daily_category_sales</code></td><td>5,823</td><td>Category mix by day</td></tr>
+          <tr><td><code>agg_store_category_sales</code></td><td>30</td><td>Store × category contribution / share</td></tr>
+          <tr><td><code>agg_product_performance</code></td><td>3,049</td><td>SKU ranking, velocity, volatility</td></tr>
+          <tr><td><code>agg_demand_trends</code></td><td>1,941</td><td>Daily demand + rolling 7d / 28d</td></tr>
+          <tr><td><code>agg_price_analysis</code></td><td>7</td><td>Price distribution by category/dept</td></tr>
+          <tr><td><code>agg_event_sales</code></td><td>6</td><td>Event vs non-event sales</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Run order (Databricks)</h2>
+      <pre>01_bronze_ingestion
+02_silver_sales
+03_silver_products
+04_silver_calendar
+05_gold_dimensions
+06_gold_facts
+07_gold_aggregations</pre>
+    </section>
+
+    <section class="panel section">
+      <h2>What’s next</h2>
+      <ul class="checklist">
+        <li><span class="mark">○</span><span>Connect Power BI to Databricks SQL Warehouse on Gold tables</span></li>
+        <li><span class="mark">○</span><span>Replace Airflow staging stubs with Databricks Jobs for notebooks 01–07</span></li>
+        <li><span class="mark">○</span><span>Build Executive / Store / Product / Demand dashboards</span></li>
+      </ul>
+    </section>
+
+    <p class="footer"><a href="05-databricks-silver.html">← Silver</a> · <a href="index.html">Overview</a></p>
+  </div>
+</body>
+</html>

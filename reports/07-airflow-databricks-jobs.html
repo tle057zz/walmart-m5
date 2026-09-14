@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>07 · Airflow → Databricks Jobs — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "base",
+      themeVariables: {
+        primaryColor: "#e8f5f1",
+        primaryTextColor: "#12202e",
+        primaryBorderColor: "#0f7a6a",
+        lineColor: "#3a4a5c",
+        secondaryColor: "#eef2f7",
+        tertiaryColor: "#ffffff",
+        fontFamily: "Manrope, sans-serif",
+      },
+    });
+  </script>
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 7 report · Airflow → Databricks Jobs</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html" aria-current="page">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 07 · Complete</div>
+      <h1>Airflow successfully triggered the Databricks Medallion job</h1>
+      <p>
+        End-to-end orchestration is live: local Airflow validates raw M5 files, then
+        runs Databricks job <code>walmart_m5_medallion</code> (<code>218487573209118</code>)
+        through Bronze → Silver → Gold (~11–12 minutes).
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">All Airflow tasks success</span>
+        <span class="chip ok">Databricks job success</span>
+        <span class="chip">batch m5_20260909T123803Z_ac813310</span>
+      </div>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">Airflow DAG</div>
+        <div class="value" style="font-size:1.25rem;">m5_pipeline</div>
+        <div class="hint">6 tasks · linear</div>
+      </article>
+      <article class="stat">
+        <div class="label">Databricks Job ID</div>
+        <div class="value" style="font-size:1.05rem;font-family:var(--font-mono);">218487573209118</div>
+        <div class="hint">walmart_m5_medallion</div>
+      </article>
+      <article class="stat">
+        <div class="label">Job notebooks</div>
+        <div class="value">7</div>
+        <div class="hint">01 → 07 sequential</div>
+      </article>
+      <article class="stat">
+        <div class="label">Latest run</div>
+        <div class="value">~12m</div>
+        <div class="hint">full medallion refresh</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>1) End-to-end architecture</h2>
+      <pre class="mermaid">
+flowchart LR
+  A[data/raw CSVs] --> B[Airflow m5_pipeline]
+  B --> C[check + validate]
+  C --> D[DatabricksRunNowOperator]
+  D --> E[Job walmart_m5_medallion]
+  E --> F[Bronze]
+  F --> G[Silver]
+  G --> H[Gold]
+  H --> I[record_databricks_success]
+      </pre>
+    </section>
+
+    <section class="panel section">
+      <h2>2) Airflow DAG diagram</h2>
+      <p style="color:var(--ink-soft);margin-bottom:1rem;">
+        Defined in <code>airflow/dags/m5_pipeline_dag.py</code>.
+      </p>
+      <pre class="mermaid">
+flowchart LR
+  start --> check_source_files --> validate_raw_files
+  validate_raw_files --> run_databricks_medallion
+  run_databricks_medallion --> record_databricks_success --> end
+      </pre>
+      <div class="dag" style="margin-top:1.25rem;" aria-label="Airflow DAG blocks">
+        <div class="dag-node bookend">start</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">check_source_files</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">validate_raw_files</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">run_databricks_medallion</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node">record_databricks_success</div>
+        <div class="dag-arrow">↓</div>
+        <div class="dag-node bookend">end</div>
+      </div>
+      <table style="margin-top:1.25rem;">
+        <thead><tr><th>Task</th><th>Type</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>check_source_files</code></td><td>Python</td><td>Confirm local raw CSVs exist</td></tr>
+          <tr><td><code>validate_raw_files</code></td><td>Python</td><td>Schema/size/rows + write manifest</td></tr>
+          <tr><td><code>run_databricks_medallion</code></td><td>DatabricksRunNow</td><td>Trigger &amp; wait for Databricks job</td></tr>
+          <tr><td><code>record_databricks_success</code></td><td>Python</td><td>Write local success audit marker</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>3) Airflow UI proof — Graph view</h2>
+      <p style="color:var(--ink-soft);">
+        Latest run: every task green, including Databricks trigger and success recorder.
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/m5_pipeline_airflow_graph_databricks.png"
+          alt="Airflow Graph view of m5_pipeline with all six tasks successful including Databricks"
+        />
+        <figcaption>
+          Airflow Graph — <code>start → check → validate → run_databricks_medallion → record → end</code> (all success).
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="panel section">
+      <h2>4) Airflow UI proof — Grid view</h2>
+      <p style="color:var(--ink-soft);">
+        Earlier runs were short local-only validations. The latest run includes the
+        full Databricks Medallion job (~11–12 minutes).
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/m5_pipeline_airflow_grid.png"
+          alt="Airflow Grid view showing successful Databricks medallion run of about 12 minutes"
+        />
+        <figcaption>
+          Airflow Grid — latest column all green; duration bar ~00:11–00:12 for Databricks run.
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="panel section">
+      <h2>5) Databricks Job DAG diagram</h2>
+      <p style="color:var(--ink-soft);margin-bottom:1rem;">
+        Job <code>walmart_m5_medallion</code> runs notebooks sequentially through the Medallion layers.
+      </p>
+      <pre class="mermaid">
+flowchart TB
+  bronze_ingestion["01 bronze_ingestion"] --> silver_sales["02 silver_sales"]
+  silver_sales --> silver_products["03 silver_products"]
+  silver_products --> silver_calendar["04 silver_calendar"]
+  silver_calendar --> gold_dimensions["05 gold_dimensions"]
+  gold_dimensions --> gold_facts["06 gold_facts"]
+  gold_facts --> gold_aggregations["07 gold_aggregations"]
+      </pre>
+      <table style="margin-top:1.25rem;">
+        <thead><tr><th>Task key</th><th>Notebook</th><th>Layer</th></tr></thead>
+        <tbody>
+          <tr><td><code>bronze_ingestion</code></td><td><code>01_bronze_ingestion</code></td><td>Bronze</td></tr>
+          <tr><td><code>silver_sales</code></td><td><code>02_silver_sales</code></td><td>Silver</td></tr>
+          <tr><td><code>silver_products</code></td><td><code>03_silver_products</code></td><td>Silver</td></tr>
+          <tr><td><code>silver_calendar</code></td><td><code>04_silver_calendar</code></td><td>Silver</td></tr>
+          <tr><td><code>gold_dimensions</code></td><td><code>05_gold_dimensions</code></td><td>Gold</td></tr>
+          <tr><td><code>gold_facts</code></td><td><code>06_gold_facts</code></td><td>Gold</td></tr>
+          <tr><td><code>gold_aggregations</code></td><td><code>07_gold_aggregations</code></td><td>Gold</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>6) Combined control plane</h2>
+      <pre class="mermaid">
+flowchart TB
+  subgraph Airflow["Apache Airflow m5_pipeline"]
+    A1[check_source_files] --> A2[validate_raw_files]
+    A2 --> A3[run_databricks_medallion]
+    A3 --> A4[record_databricks_success]
+  end
+
+  subgraph Databricks["Databricks Job walmart_m5_medallion"]
+    B1[01 Bronze] --> B2[02 Silver sales]
+    B2 --> B3[03 Products/stores/prices]
+    B3 --> B4[04 Calendar]
+    B4 --> B5[05 Gold dims]
+    B5 --> B6[06 Gold facts]
+    B6 --> B7[07 Gold aggs]
+  end
+
+  A3 -->|Run Now + wait| B1
+  B7 -->|job success| A4
+      </pre>
+    </section>
+
+    <section class="panel section">
+      <h2>7) Success marker written locally</h2>
+      <pre>{
+  "status": "databricks_medallion_success",
+  "batch_id": "m5_20260909T123803Z_ac813310",
+  "databricks_job_id": "218487573209118",
+  "layers": ["bronze", "silver", "gold"],
+  "notebooks": [
+    "01_bronze_ingestion",
+    "02_silver_sales",
+    "03_silver_products",
+    "04_silver_calendar",
+    "05_gold_dimensions",
+    "06_gold_facts",
+    "07_gold_aggregations"
+  ]
+}</pre>
+      <p style="color:var(--ink-soft);">
+        File: <code>data/ingestion/manifests/databricks_run_latest.json</code>
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>What’s next</h2>
+      <ul class="checklist">
+        <li><span class="mark">✓</span><span>Airflow ↔ Databricks Jobs automation proven</span></li>
+        <li><span class="mark">○</span><span>Power BI dashboards on <code>workspace.walmart_m5_gold</code></span></li>
+        <li><span class="mark">○</span><span>Rotate Databricks PAT used during setup (token was shared in chat)</span></li>
+      </ul>
+    </section>
+
+    <p class="footer"><a href="06-databricks-gold.html">← Gold</a> · <a href="index.html">Overview</a></p>
+  </div>
+</body>
+</html>
