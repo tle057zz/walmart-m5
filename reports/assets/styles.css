@@ -431,6 +431,29 @@ pre {
   background: #fff;
 }
 
+.pbi-embed {
+  margin-top: 1rem;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f7faf8;
+  overflow: hidden;
+}
+
+.pbi-embed iframe {
+  display: block;
+  width: 100%;
+  min-height: 1060px;
+  height: 80vh;
+  border: 0;
+}
+
+.hint-line {
+  margin-top: 0.75rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
 .mermaid {
   margin-top: 1rem;
   padding: 1rem;

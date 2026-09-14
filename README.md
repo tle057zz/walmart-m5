@@ -7,7 +7,8 @@ Retail demand forecasting / data engineering project using the Kaggle [M5 Foreca
 ```text
 walmart-m5/
 ├── data/
-│   ├── raw/                 # original Kaggle CSVs
+│   ├── raw/                 # original Kaggle CSVs (gitignored)
+│   ├── gold_export/         # local Parquet for Power BI (gitignored)
 │   └── ingestion/           # manifests + bronze staging markers
 ├── airflow/
 │   ├── docker-compose.yml
@@ -20,7 +21,8 @@ walmart-m5/
 │   ├── transformations/
 │   └── utils/
 ├── notebooks/
-├── reports/                 # HTML progress reports
+├── powerbi/                 # DAX + dashboard build docs
+├── reports/                 # HTML progress reports + live Power BI embed
 ├── requirements.txt
 └── README.md
 ```
@@ -179,18 +181,43 @@ docker compose up -d
 
 Trigger **`m5_pipeline`**. Detail guide: [`reports/07-airflow-databricks-jobs.html`](reports/07-airflow-databricks-jobs.html).
 
+## Stage 4 — Power BI live dashboard
+
+Published report (**walmart_visualization**): Executive · Store · Product · Demand pages on Gold aggregates.
+
+**Open live:** [Power BI view](https://app.powerbi.com/view?r=eyJrIjoiODI4NmU2YTYtZDBiMC00ZjM4LTkxMzgtNWMyOTlhZjc5OWNjIiwidCI6ImJlOTdiY2NhLWEzZTItNDc4Yy1iMWM1LWQ5YTRkMWI2NTY3YyJ9)
+
+Embed:
+
+```html
+<iframe
+  title="walmart_visualization"
+  width="1024"
+  height="1060"
+  src="https://app.powerbi.com/view?r=eyJrIjoiODI4NmU2YTYtZDBiMC00ZjM4LTkxMzgtNWMyOTlhZjc5OWNjIiwidCI6ImJlOTdiY2NhLWEzZTItNDc4Yy1iMWM1LWQ5YTRkMWI2NTY3YyJ9"
+  frameborder="0"
+  allowFullScreen="true"
+></iframe>
+```
+
+Also embedded on [`reports/index.html`](reports/index.html). Analysis write-ups: `reports/08`–`11`.
+
 ## Progress reports
 
 Open in a browser:
 
-- [`reports/index.html`](reports/index.html) — overview (Medallion complete)
+- [`reports/index.html`](reports/index.html) — overview + **live Power BI embed**
 - [`reports/01-raw-dataset.html`](reports/01-raw-dataset.html) — Step 1 Raw
 - [`reports/02-python-ingestion.html`](reports/02-python-ingestion.html) — Step 2 Python ingestion
 - [`reports/03-airflow.html`](reports/03-airflow.html) — Step 3 Airflow
 - [`reports/04-databricks-bronze.html`](reports/04-databricks-bronze.html) — Step 4 Bronze
 - [`reports/05-databricks-silver.html`](reports/05-databricks-silver.html) — Step 5 Silver
 - [`reports/06-databricks-gold.html`](reports/06-databricks-gold.html) — Step 6 Gold
-- [`reports/07-airflow-databricks-jobs.html`](reports/07-airflow-databricks-jobs.html) — Step 7 Airflow → Jobs (success + diagrams + screenshots)
+- [`reports/07-airflow-databricks-jobs.html`](reports/07-airflow-databricks-jobs.html) — Step 7 Airflow → Jobs
+- [`reports/08-executive-dashboard-analysis.html`](reports/08-executive-dashboard-analysis.html) — Dashboard 1 Executive
+- [`reports/09-store-dashboard-analysis.html`](reports/09-store-dashboard-analysis.html) — Dashboard 2 Store
+- [`reports/10-product-dashboard-analysis.html`](reports/10-product-dashboard-analysis.html) — Dashboard 3 Product
+- [`reports/11-demand-dashboard-analysis.html`](reports/11-demand-dashboard-analysis.html) — Dashboard 4 Demand
 
 ## Databricks notebooks
 

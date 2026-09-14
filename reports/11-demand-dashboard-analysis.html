@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>11 · Demand Dashboard Analysis — Walmart M5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;600&family=Manrope:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/styles.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="topnav">
+      <div class="brand">
+        <strong>Walmart M5 Data Platform</strong>
+        <span>Step 11 report · Demand dashboard analysis</span>
+      </div>
+      <nav class="nav-links" aria-label="Report pages">
+        <a href="index.html">Overview</a>
+        <a href="01-raw-dataset.html">01 Raw</a>
+        <a href="02-python-ingestion.html">02 Ingestion</a>
+        <a href="03-airflow.html">03 Airflow</a>
+        <a href="04-databricks-bronze.html">04 Bronze</a>
+        <a href="05-databricks-silver.html">05 Silver</a>
+        <a href="06-databricks-gold.html">06 Gold</a>
+        <a href="07-airflow-databricks-jobs.html">07 Jobs</a>
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a>
+        <a href="09-store-dashboard-analysis.html">09 Store</a>
+        <a href="10-product-dashboard-analysis.html">10 Product</a>
+        <a href="11-demand-dashboard-analysis.html" aria-current="page">11 Demand</a>
+      </nav>
+    </header>
+
+    <section class="hero">
+      <div class="eyebrow">Step 11 · Dashboard 4</div>
+      <h1>Demand dashboard: DAX, visualization, validation &amp; findings</h1>
+      <p>
+        Analysis of the Power BI <strong>DEMAND</strong> page against
+        <code>data/gold_export/</code>
+        (<code>agg_demand_trends</code>, <code>agg_event_sales</code>,
+        <code>dim_date</code>).
+      </p>
+      <div class="meta-row">
+        <span class="chip ok">KPIs match Gold</span>
+        <span class="chip ok">28D card uses Average</span>
+        <span class="chip ok">Total Units (period) labeled</span>
+        <span class="chip ok">Event table cleaned</span>
+        <span class="chip">1,941 demand days</span>
+      </div>
+    </section>
+
+    <section class="panel section">
+      <h2>Live Power BI dashboard</h2>
+      <p>
+        Published report <strong>walmart_visualization</strong> — Executive, Store,
+        Product, and Demand pages on Gold aggregates.
+        <a href="https://app.powerbi.com/view?r=eyJrIjoiODI4NmU2YTYtZDBiMC00ZjM4LTkxMzgtNWMyOTlhZjc5OWNjIiwidCI6ImJlOTdiY2NhLWEzZTItNDc4Yy1iMWM1LWQ5YTRkMWI2NTY3YyJ9" target="_blank" rel="noopener noreferrer">Open in Power BI ↗</a>
+      </p>
+      <div class="pbi-embed">
+        <iframe
+          title="walmart_visualization"
+          src="https://app.powerbi.com/view?r=eyJrIjoiODI4NmU2YTYtZDBiMC00ZjM4LTkxMzgtNWMyOTlhZjc5OWNjIiwidCI6ImJlOTdiY2NhLWEzZTItNDc4Yy1iMWM1LWQ5YTRkMWI2NTY3YyJ9"
+          allowfullscreen="true"
+          loading="lazy"
+        ></iframe>
+      </div>
+      <p class="hint-line">
+        Analysis pages:
+        <a href="08-executive-dashboard-analysis.html">08 Executive</a> ·
+        <a href="09-store-dashboard-analysis.html">09 Store</a> ·
+        <a href="10-product-dashboard-analysis.html">10 Product</a> ·
+        <a href="11-demand-dashboard-analysis.html">11 Demand</a>
+        · <a href="index.html">Overview</a>
+      </p>
+    </section>
+
+
+    <section class="panel section">
+      <h2>Part A — DAX measures used on Demand (Page 4)</h2>
+      <p>
+        Full catalogue:
+        <a href="08-executive-dashboard-analysis.html">08 Executive · Part A</a>.
+      </p>
+      <pre>Daily Units =
+SUM ( 'agg_demand_trends'[daily_units] )
+
+Daily Sales Value (Demand) =
+SUM ( 'agg_demand_trends'[daily_sales_value] )
+
+Rolling 7D Units =
+SUM ( 'agg_demand_trends'[rolling_7d_units] )
+
+Rolling 7D Avg Units =
+AVERAGE ( 'agg_demand_trends'[rolling_7d_avg_units] )
+
+/* Use Average — never Sum across all days for a KPI card */
+Rolling 28D Avg Units =
+AVERAGE ( 'agg_demand_trends'[rolling_28d_units] )
+
+Event Units =
+SUM ( 'agg_event_sales'[units_sold] )
+
+Event Sales Value =
+SUM ( 'agg_event_sales'[sales_value] )</pre>
+      <table>
+        <thead>
+          <tr><th>Measure / field</th><th>Visual</th><th>Note</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>[Daily Units]</code></td><td>Card titled <strong>Total Units (period)</strong></td><td>Period total 67M</td></tr>
+          <tr><td><code>[Rolling 7D Avg Units]</code></td><td>Card, combo line</td><td>≈ 34.41K</td></tr>
+          <tr><td><code>[Rolling 28D Avg Units]</code></td><td>Card</td><td>≈ 956.66K (fixed from Sum → 2bn)</td></tr>
+          <tr><td><code>daily_units</code>, <code>rolling_7d_units</code></td><td>Left line</td><td>Prefer avg for 7D companion; see §4</td></tr>
+          <tr><td><code>[Daily Sales Value (Demand)]</code> + 7D avg</td><td>Combo</td><td>Secondary Y-axis for units</td></tr>
+          <tr><td><code>[Event Units]</code> / columns</td><td>Event column + table</td><td>From <code>agg_event_sales</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>Part B — Dashboard 4 screenshot (updated)</h2>
+      <p>
+        Latest Power BI <strong>DEMAND</strong> page: period total card labeled,
+        7D/28D averages, units line, event columns, sales combo, and event table
+        with title and no bogus grand-total row.
+      </p>
+      <figure class="figure">
+        <img
+          src="assets/demand-dashboard-page4.png"
+          alt="Power BI Demand dashboard updated: Total Units period card, rolling averages, demand line, event chart, sales combo, event table without totals"
+          loading="lazy"
+        />
+        <figcaption>
+          Figure 1. Demand (Page 4, updated) — Total Units (period) 67M · 7D avg 34.41K ·
+          28D avg 956.66K · event vs non-event table titled · combo sales + 7D avg
+        </figcaption>
+      </figure>
+    </section>
+
+    <section class="grid stats">
+      <article class="stat">
+        <div class="label">Total units</div>
+        <div class="value">66.9M</div>
+        <div class="hint">Sum of daily_units</div>
+      </article>
+      <article class="stat">
+        <div class="label">7D avg units</div>
+        <div class="value">34.41K</div>
+        <div class="hint">Mean rolling_7d_avg_units</div>
+      </article>
+      <article class="stat">
+        <div class="label">28D avg units</div>
+        <div class="value">956.7K</div>
+        <div class="hint">Mean rolling_28d_units</div>
+      </article>
+      <article class="stat">
+        <div class="label">Non-event share</div>
+        <div class="value">92.2%</div>
+        <div class="hint">Of all units (most days)</div>
+      </article>
+    </section>
+
+    <section class="panel section">
+      <h2>1. Scope &amp; method</h2>
+      <table>
+        <thead>
+          <tr><th>Dashboard visual</th><th>Gold source</th><th>Validation</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>KPI cards</td>
+            <td><code>agg_demand_trends</code></td>
+            <td class="ok">67M · 34.41K · 956.66K match export</td>
+          </tr>
+          <tr>
+            <td>Units line</td>
+            <td><code>daily_units</code>, <code>rolling_7d_units</code></td>
+            <td>Day grain OK; scale gap remains (see §4)</td>
+          </tr>
+          <tr>
+            <td>Sales combo</td>
+            <td>sales value + 7D avg units</td>
+            <td class="ok">Dual axis; Active SKUs removed (was constant 3049)</td>
+          </tr>
+          <tr>
+            <td>Event column + table</td>
+            <td><code>agg_event_sales</code></td>
+            <td class="ok">Titled; no bad Total row; units/sales match Gold</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel section">
+      <h2>2. Visualization &amp; interaction</h2>
+
+      <h3>2.1 Layout</h3>
+      <pre>┌──────────────────────────────────────────────────────────────┐
+│ [ year ] [ month ]   [ Total Units (period) ] [ 7D Avg ] [ 28D Avg ] │
+│ [ Units line: daily vs rolling 7D ] [ Event by cat ]                 │
+│ [ Sales $ vs 7D avg (combo) ] [ Event vs non-event table ]           │
+└──────────────────────────────────────────────────────────────┘</pre>
+
+      <h3>2.2 Visual-to-field map</h3>
+      <table>
+        <thead>
+          <tr><th>Visual</th><th>Type</th><th>Fields</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Year / month</td>
+            <td>Slicers</td>
+            <td><code>dim_date[year]</code>, <code>dim_date[month]</code></td>
+          </tr>
+          <tr>
+            <td>KPIs</td>
+            <td>Cards</td>
+            <td><code>[Daily Units]</code>, <code>[Rolling 7D Avg Units]</code>, <code>[Rolling 28D Avg Units]</code></td>
+          </tr>
+          <tr>
+            <td>Demand line</td>
+            <td>Line</td>
+            <td>X <code>date</code> · Y <code>daily_units</code>, <code>rolling_7d_units</code></td>
+          </tr>
+          <tr>
+            <td>Event impact</td>
+            <td>Clustered column</td>
+            <td>X <code>event_label</code> · Legend <code>cat_id</code> · Y <code>[Event Units]</code></td>
+          </tr>
+          <tr>
+            <td>Sales vs demand</td>
+            <td>Line &amp; column</td>
+            <td>Column <code>[Daily Sales Value (Demand)]</code> · Line <code>[Rolling 7D Avg Units]</code> (secondary axis)</td>
+          </tr>
+          <tr>
+            <td>Event detail</td>
+            <td>Table</td>
+            <td><code>event_label</code>, <code>cat_id</code>, <code>days</code>, <code>units_sold</code>, <code>sales_value</code>, <code>avg_units_per_row</code></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>2.3 Interaction</h3>
+      <ul>
+        <li><strong>Year / month slicers</strong> filter demand trends and KPIs via <code>dim_date</code>.</li>
+        <li><strong>Event visuals</strong> are from an unconnected agg — they do not always shrink with the year slicer unless you relate or filter them explicitly.</li>
+        <li><strong>Sync</strong> year with Executive / Store for a consistent planning window.</li>
+        <li>Click-path: set one full year → read 7D/28D cards → scan unit trend → check event vs non-event rates in the table.</li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>3. Key pattern findings</h2>
+
+      <h3>3.1 Demand rises on a daily basis</h3>
+      <p>
+        Mean rolling 7-day average units ≈ <strong>34.4K</strong>; mean rolling 28-day
+        unit total ≈ <strong>957K</strong>. Both trend upward across 2011–2016 on the
+        daily charts. The KPI card is correctly labeled
+        <strong>Total Units (period)</strong> (67M = sum of daily units in filter),
+        distinct from the ~34K rolling 7-day average.
+      </p>
+
+      <h3>3.2 Most volume is on non-event days (expected)</h3>
+      <table>
+        <thead>
+          <tr><th>Segment</th><th>Days (per cat)</th><th>Units</th><th>Share of units</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>non_event_day</td><td>1,783</td><td>61.7M</td><td>92.2%</td></tr>
+          <tr><td>event_day</td><td>158</td><td>5.2M</td><td>7.8%</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Absolute event bars look small because there are far fewer event days.
+        Fairer lens — <strong>units per day</strong> by category:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Non-event units/day</th><th>Event units/day</th><th>Lift</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>FOODS</td><td>23,729</td><td>22,952</td><td>−3.3%</td></tr>
+          <tr><td>HOUSEHOLD</td><td>7,649</td><td>7,122</td><td>−6.9%</td></tr>
+          <tr><td>HOBBIES</td><td>3,238</td><td>2,956</td><td>−8.7%</td></tr>
+        </tbody>
+      </table>
+      <p>
+        In this M5 calendar definition, labeled event days are slightly
+        <em>weaker</em> on average units/day than non-event days (holidays /
+        closures like Christmas pull the event average down). Use the table’s
+        <code>avg_units_per_row</code> and per-day rates — not only stacked totals.
+      </p>
+
+      <h3>3.3 Active SKUs is not a trend metric</h3>
+      <p>
+        <code>active_skus</code> is <strong>3,049 every day</strong> (full catalog in the
+        long fact). It was correctly removed from the time combo; do not bring it
+        back as a line series.
+      </p>
+
+      <h3>3.4 FOODS still dominates event and non-event volume</h3>
+      <p>
+        On both event and non-event days, FOODS is the largest unit contributor —
+        consistent with Executive / Product pages.
+      </p>
+    </section>
+
+    <section class="panel section">
+      <h2>4. Dashboard quality notes</h2>
+      <ul class="checklist">
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Rolling 28D card</strong> uses Average (956.66K), not Sum (2bn).
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            KPI renamed to <strong>Total Units (period)</strong> — clearer than “Daily Units”.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            <strong>Event table</strong> titled “Event vs non-event by category”;
+            bogus Total row (5823 days / 5.76 sum of averages) removed.
+          </span>
+        </li>
+        <li>
+          <span class="mark">✓</span>
+          <span>
+            Active SKUs removed from time visuals (constant 3,049 by design).
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            <strong>Left line:</strong> still pairs <code>daily_units</code> (~35K) with
+            <code>rolling_7d_units</code> (~250K), so daily looks flat near the bottom.
+            Prefer <code>rolling_7d_avg_units</code> (Average) as the companion series.
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            <strong>Combo chart:</strong> ensure <strong>Secondary y-axis On</strong> for
+            Rolling 7D Avg Units; if both series share the $ axis, the units line
+            sits too low under the sales area.
+          </span>
+        </li>
+        <li>
+          <span class="mark">!</span>
+          <span>
+            Optional: split combo into sales area + units line for maximum clarity.
+          </span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="panel section">
+      <h2>5. Recommendations</h2>
+      <ol>
+        <li>Switch left line companion to <strong>rolling_7d_avg_units</strong> (Average).</li>
+        <li>Confirm combo secondary Y-axis for units (or split into two charts).</li>
+        <li>Interpret events with <strong>units/day</strong>, not only absolute stacks.</li>
+        <li>Keep forecasting focus on FOODS baseline demand + holiday zero days.</li>
+        <li>Sync year slicer with Executive.</li>
+      </ol>
+    </section>
+
+    <section class="panel section">
+      <h2>6. Reproduce</h2>
+      <pre><code>python - &lt;&lt;'PY'
+import pandas as pd
+from pathlib import Path
+P = Path('data/gold_export')
+d = pd.read_parquet(P/'agg_demand_trends.parquet')
+e = pd.read_parquet(P/'agg_event_sales.parquet')
+print(d['daily_units'].sum(), d['rolling_7d_avg_units'].mean(), d['rolling_28d_units'].mean())
+print(e.groupby('event_label')['units_sold'].sum())
+PY</code></pre>
+      <p>
+        Screenshot:
+        <a href="assets/demand-dashboard-page4.png"><code>assets/demand-dashboard-page4.png</code></a>.
+        Related:
+        <a href="08-executive-dashboard-analysis.html">08</a> ·
+        <a href="09-store-dashboard-analysis.html">09</a> ·
+        <a href="10-product-dashboard-analysis.html">10</a>.
+      </p>
+    </section>
+
+    <p class="footer">
+      Open <code>reports/11-demand-dashboard-analysis.html</code> ·
+      validated against gold_export · Sep 2026
+    </p>
+  </div>
+</body>
+</html>
